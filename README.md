@@ -6,12 +6,14 @@
 
 ## 快速开始
 
+**首次运行：** 在项目目录下打开终端，依次执行：
+
 ```bash
 npm install
 npm start
 ```
 
-也可以双击 `start.vbs` 启动。
+**后续运行：** 无需重复安装依赖，直接双击 `start.vbs` 即可启动。
 
 首次启动时，填写 [DeepSeek API KEY](https://platform.deepseek.com/api_keys)。
 
