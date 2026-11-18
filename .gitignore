@@ -1,0 +1,7 @@
+# 运行时数据（含 API Key 与聊天记录，绝不入库）
+data/
+runtime/
+
+node_modules/
+*.log
+shot-ui.png
