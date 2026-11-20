@@ -97,6 +97,7 @@
   --shadow-float: 0 6px 18px rgba(0, 0, 0, 0.35);
   --shadow-menu: 0 16px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-input: 0 10px 28px rgba(0, 0, 0, 0.32), 0 2px 6px rgba(0, 0, 0, 0.22);
   --img-placeholder: rgba(0, 0, 0, 0.18);
   --ring: rgba(22, 22, 26, 0.92);
   --link-underline: rgba(142, 162, 255, 0.35);
@@ -156,6 +157,7 @@
   --shadow-float: 0 6px 16px rgba(20, 24, 33, 0.12);
   --shadow-menu: 0 16px 40px rgba(20, 24, 33, 0.16), 0 2px 8px rgba(20, 24, 33, 0.08);
   --shadow-card: 0 8px 24px rgba(20, 24, 33, 0.14);
+  --shadow-input: 0 10px 30px rgba(20, 24, 33, 0.1), 0 2px 8px rgba(20, 24, 33, 0.05);
   --img-placeholder: rgba(20, 24, 33, 0.05);
   --ring: rgba(255, 255, 255, 0.92);
   --link-underline: rgba(44, 75, 210, 0.3);
@@ -806,15 +808,15 @@ body.fullscreen .composer {
 .composer {
   position: relative;
   flex: 0 0 auto;
-  padding: 6px 16px 12px;
+  padding: 8px 16px 16px;
 }
 
 .toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 27px;
-  padding: 0 11px 0 9px;
+  height: 30px;
+  padding: 0 12px 0 10px;
   border-radius: 999px;
   background: transparent;
   border: 1px solid var(--border-strong);
@@ -832,8 +834,8 @@ body.fullscreen .composer {
 }
 
 .chip-icon {
-  width: 14.5px;
-  height: 14.5px;
+  width: 15px;
+  height: 15px;
   flex: 0 0 auto;
   fill: none;
   stroke: currentColor;
@@ -964,22 +966,19 @@ body.fullscreen .composer {
 .input-wrap {
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 10px;
   background: var(--input-bg);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 10px 10px 8px 14px;
-  transition: border-color 0.16s, background 0.16s;
-}
-
-.input-wrap:focus-within {
-  border-color: var(--border-strong);
-  background: var(--input-bg);
+  border-radius: 22px;
+  padding: 15px 14px 10px 18px;
+  box-shadow: var(--shadow-input);
+  transition: border-color 0.16s, background 0.16s, box-shadow 0.16s;
 }
 
 #input {
   flex: 0 0 auto;
   width: 100%;
+  min-height: 25px;
   border: none;
   outline: none;
   resize: none;
@@ -987,10 +986,10 @@ body.fullscreen .composer {
   color: var(--text);
   font-family: inherit;
   font-size: 15px;
-  line-height: 1.62;
+  line-height: 1.65;
   letter-spacing: 0.012em;
   max-height: 132px;
-  padding: 1px 2px;
+  padding: 0 2px;
   user-select: text;
 }
 
@@ -998,14 +997,14 @@ body.fullscreen .composer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  min-height: 32px;
+  gap: 10px;
+  min-height: 34px;
 }
 
 .input-actions {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   flex: 0 0 auto;
 }
 
@@ -1016,8 +1015,8 @@ body.fullscreen .composer {
 
 .send-btn {
   flex: 0 0 auto;
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border: none;
@@ -1041,8 +1040,8 @@ body.fullscreen .composer {
 .send-btn:hover { background: var(--accent-hover); }
 
 .send-btn:disabled {
-  background: var(--hover);
-  color: var(--text-faint);
+  background: var(--accent-soft);
+  color: var(--accent);
   cursor: default;
 }
 
@@ -1839,8 +1838,8 @@ button:focus-visible {
 
 .attach-btn {
   flex: 0 0 auto;
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   border: none;
