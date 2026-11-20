@@ -14,7 +14,10 @@ const DEFAULTS = {
   model: DEFAULT_MODEL,
   effort: DEFAULT_EFFORT,
   search: false,
+  theme: 'dark',
 };
+
+const THEMES = ['dark', 'light', 'system'];
 
 function configPath() {
   return path.join(dataDir(), 'config.json');
@@ -33,6 +36,7 @@ function normalize(raw) {
 
   if (!MODELS.includes(cfg.model)) cfg.model = DEFAULTS.model;
   if (!EFFORTS.includes(cfg.effort)) cfg.effort = DEFAULTS.effort;
+  if (!THEMES.includes(cfg.theme)) cfg.theme = DEFAULTS.theme;
   cfg.search = cfg.search === true;
   return cfg;
 }

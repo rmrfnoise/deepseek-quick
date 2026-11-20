@@ -27,6 +27,7 @@ const el = {
   keyHint: $('keyHint'),
   btnSaveKey: $('btnSaveKey'),
   btnTestKey: $('btnTestKey'),
+  themeSwitch: $('themeSwitch'),
   sessionTitle: $('sessionTitle'),
   metaModel: $('metaModel'),
   metaHotkey: $('metaHotkey'),
@@ -1375,6 +1376,37 @@ function updateMeta() {
   el.btnSearch.classList.toggle('on', state.cfg.search === true);
 }
 
+/* ---------- 主题 ---------- */
+
+const THEME_CHOICES = ['dark', 'light', 'system'];
+
+function resolveTheme(choice) {
+  if (choice === 'light' || choice === 'dark') return choice;
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+}
+
+/** 应用主题：写到 <html data-theme>，并同步设置面板里的选中态 */
+function applyTheme(choice) {
+  const theme = THEME_CHOICES.includes(choice) ? choice : 'dark';
+  document.documentElement.dataset.theme = resolveTheme(theme);
+  /* 缓存一份给 theme-boot.js，下次启动首帧就是正确主题 */
+  try {
+    localStorage.setItem('dsq-theme', theme);
+  } catch (_) {
+    /* localStorage 不可用时忽略，只影响首帧 */
+  }
+  for (const btn of el.themeSwitch.querySelectorAll('.theme-opt')) {
+    const on = btn.dataset.themeChoice === theme;
+    btn.classList.toggle('on', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  }
+}
+
+/* 选了“跟随系统”时，系统深浅色变化要实时生效 */
+window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', () => {
+  if (state.cfg && state.cfg.theme === 'system') applyTheme('system');
+});
+
 /* ---------- 下拉菜单：模型 / 推理等级 ---------- */
 
 let openMenuEl = null;
@@ -1462,6 +1494,7 @@ function bindMenu(btn, menu, place) {
 
 async function openSettings() {
   state.cfg = await window.api.getConfig();
+  applyTheme(state.cfg.theme);
   updateMeta();
   el.apiKeyInput.value = state.cfg.hasKey ? state.cfg.apiKeyMasked : '';
   el.apiKeyInput.type = 'password';
@@ -1705,6 +1738,16 @@ el.btnSettingsClose.addEventListener('click', closeSettings);
 el.btnSaveKey.addEventListener('click', saveKey);
 el.btnTestKey.addEventListener('click', testKey);
 
+el.themeSwitch.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.theme-opt');
+  if (!btn) return;
+  const choice = btn.dataset.themeChoice;
+  if (!THEME_CHOICES.includes(choice) || choice === state.cfg.theme) return;
+  state.cfg.theme = choice;
+  applyTheme(choice);
+  await window.api.saveConfig({ theme: choice });
+});
+
 el.apiKeyInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') saveKey();
 });
@@ -1816,6 +1859,7 @@ window.api.onSessionCreated(() => {
 
 (async function boot() {
   state.cfg = await window.api.getConfig();
+  applyTheme(state.cfg.theme);
   /* 图片走独立的内联通道，这里只保留文档扩展名 */
   const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
   FILES_OK = (Array.isArray(state.cfg.fileExts) ? state.cfg.fileExts : []).filter((e) => !imageExts.includes(e));

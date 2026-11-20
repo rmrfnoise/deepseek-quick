@@ -56,8 +56,11 @@
 }
 
 :root {
+  color-scheme: dark;
+
   --bg: #151517;
   --bg-soft: #2c2c2e;
+  --input-bg: #2c2c2e;
   --bg-elev: #353638;
   --bg-layer-1: #232324;
   --border: rgba(255, 255, 255, 0.06);
@@ -79,6 +82,26 @@
   --success: #4ed17e;
   --warn: #f7ad31;
   --error: #f25a5a;
+  /* 主题无关的语义色：浅色主题只覆盖这些变量，组件规则不用改 */
+  --bg-code: #1b1b1c;
+  --bg-elev-2: #3d3e40;
+  --bg-sticky: rgba(35, 35, 36, 0.9);
+  --bg-glass: rgba(21, 21, 23, 0.8);
+  --hover-soft: rgba(255, 255, 255, 0.045);
+  --hover: rgba(255, 255, 255, 0.07);
+  --hover-strong: rgba(255, 255, 255, 0.08);
+  --active: rgba(255, 255, 255, 0.14);
+  --edge-strong: rgba(255, 255, 255, 0.22);
+  --scroll-thumb: rgba(255, 255, 255, 0.16);
+  --shadow-panel: 0 3px 10px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-float: 0 6px 18px rgba(0, 0, 0, 0.35);
+  --shadow-menu: 0 16px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --img-placeholder: rgba(0, 0, 0, 0.18);
+  --ring: rgba(22, 22, 26, 0.92);
+  --link-underline: rgba(142, 162, 255, 0.35);
+  --link-underline-hover: rgba(142, 162, 255, 0.8);
+  --accent-strong-text: #cfd9ff;
   --radius: 16px;
   /* 官方风格：与 chat.deepseek.com 的 --dsw-font-family 同序 */
   --font-official: "quote-cjk-patch", "Inter", system-ui, -apple-system,
@@ -88,6 +111,80 @@
   --font-ui: var(--font-official);
   --font-mono: "Cascadia Mono", "Consolas", "SF Mono", monospace;
 }
+
+/* ---------- 浅色主题：只覆盖调色板与少量深色专用细节 ---------- */
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #ffffff;
+  --bg-soft: #f3f4f6;
+  --input-bg: #ffffff;
+  --bg-elev: #ffffff;
+  --bg-elev-2: #eceef1;
+  --bg-layer-1: #f7f7f8;
+  --bg-code: #f7f7f8;
+  --bg-sticky: rgba(255, 255, 255, 0.92);
+  --bg-glass: rgba(255, 255, 255, 0.88);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-strong: rgba(0, 0, 0, 0.14);
+  --text: #1d1f24;
+  --text-dim: #3b3e45;
+  --text-faint: #5b5f67;
+  --text-caption: #7c8089;
+  --accent: #4d6bfe;
+  --accent-hover: #3a58f0;
+  --accent-soft: rgba(77, 107, 254, 0.1);
+  --accent-text: #2c4bd2;
+  --accent-strong-text: #1c36ae;
+  --chip-bg: #e9edff;
+  --chip-border: #c2cefc;
+  --chip-text: #2c4bd2;
+  --chip-hover-bg: #dde5ff;
+  --chip-hover-border: #aabcf9;
+  --chip-hover-text: #213cba;
+  --success: #0f7b3f;
+  --warn: #9a5b00;
+  --error: #c0281f;
+  --hover-soft: rgba(24, 26, 31, 0.035);
+  --hover: rgba(24, 26, 31, 0.05);
+  --hover-strong: rgba(24, 26, 31, 0.065);
+  --active: rgba(24, 26, 31, 0.1);
+  --edge-strong: rgba(24, 26, 31, 0.26);
+  --scroll-thumb: rgba(24, 26, 31, 0.18);
+  --shadow-panel: 0 2px 10px rgba(20, 24, 33, 0.1), 0 1px 2px rgba(20, 24, 33, 0.06);
+  --shadow-float: 0 6px 16px rgba(20, 24, 33, 0.12);
+  --shadow-menu: 0 16px 40px rgba(20, 24, 33, 0.16), 0 2px 8px rgba(20, 24, 33, 0.08);
+  --shadow-card: 0 8px 24px rgba(20, 24, 33, 0.14);
+  --img-placeholder: rgba(20, 24, 33, 0.05);
+  --ring: rgba(255, 255, 255, 0.92);
+  --link-underline: rgba(44, 75, 210, 0.3);
+  --link-underline-hover: rgba(44, 75, 210, 0.7);
+}
+
+/* 浅色下输入框也是纯白，靠描边和背景区分 */
+:root[data-theme="light"] .input-wrap:not(:focus-within),
+:root[data-theme="light"] .field input:not(:focus) {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+/* 深色版 logo 的白肚皮在浅色底上会糊成一片，换一份淡蓝细节的 */
+:root[data-theme="light"] .mark,
+:root[data-theme="light"] .empty-mark {
+  content: url("assets/logo-light.svg");
+}
+
+/* 文件类型徽标：浅色底上加深文字，保持可读 */
+:root[data-theme="light"] .doc-badge.ext-pdf { color: #a33a33; }
+:root[data-theme="light"] .doc-badge.ext-doc,
+:root[data-theme="light"] .doc-badge.ext-docx { color: #2e5cb8; }
+:root[data-theme="light"] .doc-badge.ext-ppt,
+:root[data-theme="light"] .doc-badge.ext-pptx { color: #9a531c; }
+:root[data-theme="light"] .doc-badge.ext-xls,
+:root[data-theme="light"] .doc-badge.ext-xlsx,
+:root[data-theme="light"] .doc-badge.ext-csv { color: #22714a; }
+:root[data-theme="light"] .doc-badge.ext-epub,
+:root[data-theme="light"] .doc-badge.ext-mobi { color: #6244a8; }
 
 * {
   box-sizing: border-box;
@@ -137,7 +234,7 @@ body {
   background: var(--bg);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-panel);
   overflow: hidden;
 }
 
@@ -232,7 +329,7 @@ body {
 }
 
 .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-strong);
   color: var(--text);
 }
 
@@ -242,8 +339,8 @@ body {
   padding: 8px 16px;
   font-size: 12.5px;
   color: var(--warn);
-  background: rgba(247, 173, 49, 0.08);
-  border-bottom: 1px solid rgba(247, 173, 49, 0.16);
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--warn) 16%, transparent);
 }
 
 /* ---------- 消息区 ---------- */
@@ -271,13 +368,13 @@ body {
   color: var(--text-dim);
   cursor: pointer;
   z-index: 5;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-float);
   transition: color 0.14s, border-color 0.14s, background 0.14s;
 }
 
 .to-bottom:hover {
   color: var(--text);
-  background: #3d3e40;
+  background: var(--bg-elev-2);
 }
 
 .to-bottom svg {
@@ -380,7 +477,7 @@ body {
 .spinner {
   width: 11px;
   height: 11px;
-  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  border: 1.5px solid var(--active);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.75s linear infinite;
@@ -456,7 +553,7 @@ body {
 .answer pre {
   margin: 0 0 13px;
   padding: 13px 15px;
-  background: #1b1b1c;
+  background: var(--bg-code);
   border: 1px solid var(--border);
   border-radius: 11px;
   overflow-x: auto;
@@ -480,7 +577,7 @@ body {
 
 .answer pre::-webkit-scrollbar-thumb,
 .answer .table-wrap::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.16);
+  background: var(--scroll-thumb);
   border-radius: 3px;
 }
 
@@ -507,7 +604,7 @@ body {
   padding: 0 8px;
   border: 1px solid var(--border-strong);
   border-radius: 6px;
-  background: rgba(35, 35, 36, 0.9);
+  background: var(--bg-sticky);
   color: var(--text-dim);
   font-family: inherit;
   font-size: 11px;
@@ -529,7 +626,7 @@ body {
 
 .code-copy.done {
   color: var(--success);
-  border-color: rgba(78, 209, 126, 0.45);
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
   opacity: 1;
 }
 
@@ -571,11 +668,11 @@ body {
 .answer a {
   color: var(--accent-text);
   text-decoration: none;
-  border-bottom: 1px solid rgba(142, 162, 255, 0.35);
+  border-bottom: 1px solid var(--link-underline);
 }
 
 .answer a:hover {
-  border-bottom-color: rgba(142, 162, 255, 0.8);
+  border-bottom-color: var(--link-underline-hover);
 }
 
 .answer hr {
@@ -618,7 +715,7 @@ body {
   gap: 10px;
   padding: 11px 13px;
   border-radius: 11px;
-  background: rgba(242, 90, 90, 0.08);
+  background: color-mix(in srgb, var(--error) 8%, transparent);
   color: var(--error);
   font-size: 13px;
   line-height: 1.65;
@@ -634,14 +731,14 @@ body {
   font-family: inherit;
   color: var(--error);
   background: transparent;
-  border: 1px solid rgba(242, 90, 90, 0.35);
+  border: 1px solid color-mix(in srgb, var(--error) 35%, transparent);
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.14s;
 }
 
-.err-btn:hover { background: rgba(242, 90, 90, 0.12); }
+.err-btn:hover { background: color-mix(in srgb, var(--error) 12%, transparent); }
 
 /* ---------- 输入区 ---------- */
 
@@ -669,7 +766,7 @@ body {
 }
 
 .toggle:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--hover);
   color: var(--text);
 }
 
@@ -762,7 +859,7 @@ body {
 }
 
 .usage-bar .u-cost b {
-  color: #9db0ff;
+  color: var(--accent-text);
 }
 
 .usage-bar .u-note {
@@ -787,27 +884,27 @@ body {
 
 .usage-bar .u-badge.off {
   color: var(--success);
-  border-color: rgba(78, 209, 126, 0.32);
-  background: rgba(78, 209, 126, 0.07);
+  border-color: color-mix(in srgb, var(--success) 32%, transparent);
+  background: color-mix(in srgb, var(--success) 7%, transparent);
 }
 
 .usage-bar .u-badge.peak {
   color: var(--warn);
-  border-color: rgba(247, 173, 49, 0.32);
-  background: rgba(247, 173, 49, 0.07);
+  border-color: color-mix(in srgb, var(--warn) 32%, transparent);
+  background: color-mix(in srgb, var(--warn) 7%, transparent);
 }
 
 .usage-bar .u-badge.mixed {
   color: var(--text-dim);
   border-color: var(--border-strong);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--hover-soft);
 }
 
 .input-wrap {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  background: var(--bg-soft);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 10px 10px 8px 14px;
@@ -816,7 +913,7 @@ body {
 
 .input-wrap:focus-within {
   border-color: var(--border-strong);
-  background: var(--bg-soft);
+  background: var(--input-bg);
 }
 
 #input {
@@ -883,13 +980,13 @@ body {
 .send-btn:hover { background: var(--accent-hover); }
 
 .send-btn:disabled {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--hover);
   color: var(--text-faint);
   cursor: default;
 }
 
 .send-btn.stop {
-  background: rgba(242, 90, 90, 0.16);
+  background: color-mix(in srgb, var(--error) 16%, transparent);
   color: var(--error);
 }
 
@@ -937,7 +1034,7 @@ body {
 .field input {
   height: 38px;
   padding: 0 13px;
-  background: var(--bg-soft);
+  background: var(--input-bg);
   border: 1px solid transparent;
   border-radius: 10px;
   color: var(--text);
@@ -951,7 +1048,7 @@ body {
 
 .field input:focus {
   border-color: var(--border-strong);
-  background: var(--bg-elev);
+  background: var(--input-bg);
 }
 
 .field-hint {
@@ -966,6 +1063,46 @@ body {
 .settings-actions {
   display: flex;
   gap: 9px;
+}
+
+/* 外观：深色 / 浅色 / 跟随系统 */
+.theme-switch {
+  display: inline-flex;
+  gap: 2px;
+  align-self: flex-start;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+}
+
+.theme-opt {
+  height: 27px;
+  padding: 0 13px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.14s, color 0.14s;
+}
+
+.theme-opt:hover {
+  color: var(--text);
+  background: var(--hover);
+}
+
+.theme-opt.on {
+  background: var(--bg-elev);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+:root[data-theme="light"] .theme-opt.on {
+  box-shadow: 0 1px 2px rgba(20, 24, 33, 0.12);
 }
 
 .btn {
@@ -996,7 +1133,7 @@ body {
 
 .btn.ghost:hover {
   color: var(--text);
-  border-color: rgba(255, 255, 255, 0.22);
+  border-color: var(--edge-strong);
 }
 
 .settings-meta {
@@ -1055,7 +1192,7 @@ body {
   flex: 0 0 auto;
   border-radius: 11px;
   border: none;
-  background: rgba(255, 255, 255, 0.045);
+  background: var(--hover-soft);
   color: var(--text-dim);
   font-family: inherit;
   font-size: 13px;
@@ -1065,13 +1202,13 @@ body {
 }
 
 .new-session-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-strong);
   color: var(--text);
 }
 
 .new-session-btn.current {
   background: var(--accent-soft);
-  color: #9cb0ff;
+  color: var(--accent-text);
 }
 
 .new-session-btn svg {
@@ -1102,11 +1239,11 @@ body {
 }
 
 .session-item:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--hover-strong);
 }
 
 .session-item.active {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--active);
 }
 
 .s-main {
@@ -1150,7 +1287,7 @@ body {
 }
 
 .s-del:hover {
-  background: rgba(242, 90, 90, 0.15);
+  background: color-mix(in srgb, var(--error) 15%, transparent);
   color: var(--error);
 }
 
@@ -1166,9 +1303,9 @@ body {
 .s-del.confirm,
 .s-del.confirm:hover {
   opacity: 1 !important;
-  background: rgba(242, 90, 90, 0.34) !important;
+  background: color-mix(in srgb, var(--error) 34%, transparent) !important;
   color: var(--error) !important;
-  border: 1px solid rgba(242, 90, 90, 0.5);
+  border: 1px solid color-mix(in srgb, var(--error) 50%, transparent);
   width: auto;
   padding: 0 8px;
   font-size: 11.5px;
@@ -1191,12 +1328,12 @@ body {
 
 .clear-all-btn:hover {
   color: var(--error);
-  background: rgba(242, 90, 90, 0.1);
+  background: color-mix(in srgb, var(--error) 10%, transparent);
 }
 
 .clear-all-btn.confirm {
   color: var(--error);
-  background: rgba(242, 90, 90, 0.22);
+  background: color-mix(in srgb, var(--error) 22%, transparent);
 }
 
 .session-empty {
@@ -1218,7 +1355,7 @@ body {
   border-radius: 12px;
   background: var(--bg-elev);
   border: 1px solid var(--border-strong);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-menu);
   animation: menu-in 0.12s ease-out;
 }
 
@@ -1254,7 +1391,7 @@ body {
   transition: background 0.12s;
 }
 
-.menu-item:hover { background: rgba(255, 255, 255, 0.08); }
+.menu-item:hover { background: var(--hover-strong); }
 
 .menu-item .item-label {
   overflow: hidden;
@@ -1282,7 +1419,7 @@ body {
 
 /* 键盘操作时给出清楚的焦点环，鼠标点击不显示 */
 button:focus-visible {
-  outline: 2px solid rgba(77, 107, 254, 0.75);
+  outline: 2px solid color-mix(in srgb, var(--accent) 75%, transparent);
   outline-offset: 2px;
 }
 
@@ -1296,8 +1433,8 @@ button:focus-visible {
 .search-box {
   margin-bottom: 14px;
   border-radius: 11px;
-  background: rgba(77, 107, 254, 0.07);
-  border: 1px solid rgba(77, 107, 254, 0.16);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
   overflow: hidden;
 }
 
@@ -1342,8 +1479,8 @@ button:focus-visible {
   padding: 0 3px;
   margin: 0 2px;
   border-radius: 5px;
-  background: rgba(77, 107, 254, 0.16);
-  color: #9db0ff;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent-text);
   font-size: 10.5px;
   line-height: 1;
   vertical-align: super;
@@ -1353,8 +1490,8 @@ button:focus-visible {
 }
 
 .cite:hover {
-  background: rgba(77, 107, 254, 0.32);
-  color: #cfd9ff;
+  background: color-mix(in srgb, var(--accent) 32%, transparent);
+  color: var(--accent-strong-text);
 }
 
 .cite-card {
@@ -1368,7 +1505,7 @@ button:focus-visible {
   border-radius: 9px;
   background: var(--bg-layer-1);
   border: 1px solid var(--border-strong);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-card);
   z-index: 20;
   text-align: left;
   white-space: normal;
@@ -1416,7 +1553,7 @@ button:focus-visible {
 }
 
 .source-item:hover .source-title {
-  color: #cfd9ff;
+  color: var(--accent-strong-text);
   text-decoration: underline;
 }
 
@@ -1428,8 +1565,8 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   border-radius: 5px;
-  background: rgba(77, 107, 254, 0.16);
-  color: #9db0ff;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent-text);
   font-size: 10.5px;
   transform: translateY(1px);
 }
@@ -1529,7 +1666,7 @@ button:focus-visible {
 }
 
 .attach-btn:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--hover);
   color: var(--text);
 }
 
@@ -1553,7 +1690,7 @@ button:focus-visible {
   object-fit: contain;
   border-radius: 9px;
   display: block;
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--img-placeholder);
 }
 
 .q-images img.pending {
@@ -1590,9 +1727,9 @@ button:focus-visible {
   z-index: 40;
   display: grid;
   place-items: center;
-  border: 1.5px dashed rgba(77, 107, 254, 0.65);
+  border: 1.5px dashed color-mix(in srgb, var(--accent) 65%, transparent);
   border-radius: 13px;
-  background: rgba(21, 21, 23, 0.8);
+  background: var(--bg-glass);
   color: var(--text-dim);
   font-size: 14px;
   letter-spacing: 0.03em;
@@ -1630,7 +1767,7 @@ button:focus-visible {
   font-size: 9.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--hover);
   color: var(--text-dim);
 }
 
@@ -1677,7 +1814,7 @@ button:focus-visible {
   top: -6px;
   right: -6px;
   opacity: 0;
-  box-shadow: 0 0 0 1.5px rgba(22, 22, 26, 0.92);
+  box-shadow: 0 0 0 1.5px var(--ring);
 }
 
 .doc:hover .doc-x { opacity: 1; }

@@ -499,6 +499,7 @@ function registerIpc() {
       model: cfg.model,
       effort: cfg.effort,
       search: cfg.search,
+      theme: cfg.theme,
       models: MODELS,
       efforts: EFFORTS,
       fileExts: filesStore.SUPPORTED,

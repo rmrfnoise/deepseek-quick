@@ -6,6 +6,7 @@
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';" />
 <title>DeepSeek Quick</title>
 <link rel="stylesheet" href="style.css" />
+<script src="theme-boot.js"></script>
 </head>
 <body>
 <div class="panel">
@@ -107,6 +108,14 @@
     <div class="settings-actions">
       <button class="btn primary" id="btnSaveKey">保存</button>
       <button class="btn ghost" id="btnTestKey">测试连通</button>
+    </div>
+    <div class="field">
+      <span class="field-label">外观</span>
+      <div class="theme-switch" id="themeSwitch" role="group" aria-label="外观主题">
+        <button type="button" class="theme-opt" data-theme-choice="dark">深色</button>
+        <button type="button" class="theme-opt" data-theme-choice="light">浅色</button>
+        <button type="button" class="theme-opt" data-theme-choice="system">跟随系统</button>
+      </div>
     </div>
     <div class="settings-meta">
       <div><span>版本</span><b id="metaVersion">-</b></div>
