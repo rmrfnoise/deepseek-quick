@@ -5,7 +5,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('api', {
   getConfig: () => ipcRenderer.invoke('config:get'),
   saveConfig: (patch) => ipcRenderer.invoke('config:save', patch),
-  testKey: () => ipcRenderer.invoke('config:test'),
+  testKey: (apiKey) => ipcRenderer.invoke('config:test', apiKey),
 
   send: (payload) => ipcRenderer.invoke('chat:send', payload),
   abort: () => ipcRenderer.invoke('chat:abort'),

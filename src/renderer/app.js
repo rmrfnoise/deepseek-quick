@@ -1251,7 +1251,7 @@ async function submit() {
 
   if (!state.cfg || !state.cfg.hasKey) {
     openSettings();
-    setKeyHint('请先填写 API Key 再提问', 'bad');
+    setKeyHint('请先填写 API KEY 再提问', 'bad');
     return;
   }
 
@@ -1311,7 +1311,7 @@ async function submit() {
       turn.root.remove();
       state.turns = state.turns.filter((t) => t !== turn);
       openSettings();
-      setKeyHint('请先填写 API Key', 'bad');
+      setKeyHint('请先填写 API KEY', 'bad');
     } else {
       turn.root.remove();
       state.turns = state.turns.filter((t) => t !== turn);
@@ -1466,7 +1466,9 @@ async function openSettings() {
   el.apiKeyInput.value = state.cfg.hasKey ? state.cfg.apiKeyMasked : '';
   el.apiKeyInput.type = 'password';
   setKeyHint(
-    state.cfg.hasKey ? '已保存 Key（以掩码显示，重新输入可覆盖）' : '在 platform.deepseek.com 创建，保存在本机',
+    state.cfg.hasKey
+      ? '已保存 Key（以掩码显示，重新输入可覆盖）'
+      : '在 platform.deepseek.com 创建后粘贴，可先“测试连通”再保存',
   );
   el.settings.classList.remove('hidden');
   el.apiKeyInput.focus();
@@ -1500,11 +1502,37 @@ async function saveKey() {
   }
 }
 
+let keyTesting = false;
 async function testKey() {
+  if (keyTesting) return;
+
+  const raw = el.apiKeyInput.value.trim();
+  /* 掩码是已保存 Key 的展示形式，不能拿它去请求 */
+  const typed = Boolean(raw) && !raw.includes('****');
+  if (!typed && !(state.cfg && state.cfg.hasKey)) {
+    setKeyHint('请先填写 API KEY 再测试', 'bad');
+    el.apiKeyInput.focus();
+    return;
+  }
+  if (typed && !raw.startsWith('sk-')) {
+    setKeyHint('Key 通常以 sk- 开头，请确认是否复制完整', 'bad');
+    return;
+  }
+
+  keyTesting = true;
   setKeyHint('正在测试…');
-  const res = await window.api.testKey();
-  if (res.ok) setKeyHint(`连通正常（${res.model}）`, 'ok');
-  else setKeyHint(res.error || '测试失败', 'bad');
+  try {
+    /* 输入框里是新 Key 就直接测新的（无需先保存）；显示掩码时测已保存的。
+       这里只验证连通性，不写盘——落盘只由「保存」按钮负责。 */
+    const res = await window.api.testKey(typed ? raw : undefined);
+    if (!res || !res.ok) {
+      setKeyHint((res && res.error) || '测试失败', 'bad');
+      return;
+    }
+    setKeyHint(typed ? '连通正常，点“保存”后生效' : '连通正常', 'ok');
+  } finally {
+    keyTesting = false;
+  }
 }
 
 /* ---------- 事件 ---------- */

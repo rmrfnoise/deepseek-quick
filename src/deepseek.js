@@ -16,7 +16,7 @@ const DEFAULT_EFFORT = 'high';
 
 const ERROR_HINTS = {
   400: '请求格式有误',
-  401: 'API Key 无效或已失效，请检查设置',
+  401: 'API KEY 无效或已失效，请检查设置',
   402: '账户余额不足，请到 platform.deepseek.com 充值',
   403: '无访问权限',
   422: '参数校验失败',

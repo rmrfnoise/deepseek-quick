@@ -512,15 +512,17 @@ function registerIpc() {
 
   ipcMain.handle('config:save', (_e, patch) => store.save(patch));
 
-  ipcMain.handle('config:test', async () => {
+  /* 允许带上输入框里的 Key 直接测：首次使用还没保存时也能验证 */
+  ipcMain.handle('config:test', async (_e, inputKey) => {
     const cfg = store.load();
-    if (!cfg.apiKey) return { ok: false, error: '尚未填写 API Key' };
+    const key = String(inputKey || '').trim().slice(0, 400) || cfg.apiKey;
+    if (!key) return { ok: false, error: '尚未填写 API KEY' };
     try {
       const resp = await fetch(ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${cfg.apiKey}`,
+          Authorization: `Bearer ${key}`,
         },
         signal: AbortSignal.timeout(15000),
         body: JSON.stringify({
