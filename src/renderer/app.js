@@ -4,6 +4,7 @@ const $ = (id) => document.getElementById(id);
 
 const el = {
   stream: $('stream'),
+  streamInner: $('streamInner'),
   empty: $('empty'),
   toBottom: $('btnToBottom'),
   input: $('input'),
@@ -28,6 +29,7 @@ const el = {
   btnSaveKey: $('btnSaveKey'),
   btnTestKey: $('btnTestKey'),
   themeSwitch: $('themeSwitch'),
+  zoomHint: $('zoomHint'),
   sessionTitle: $('sessionTitle'),
   metaModel: $('metaModel'),
   metaHotkey: $('metaHotkey'),
@@ -813,7 +815,7 @@ function createTurn(question, thinkingOn, images = [], docs = []) {
   }
 
   root.appendChild(a);
-  el.stream.appendChild(root);
+  el.streamInner.appendChild(root);
   scrollBottom(true);
 
   answer.addEventListener('click', (e) => {
@@ -912,7 +914,7 @@ function appendError(message, actions = []) {
   const wrap = document.createElement('div');
   wrap.className = 'turn';
   wrap.appendChild(box);
-  el.stream.appendChild(wrap);
+  el.streamInner.appendChild(wrap);
   scrollBottom(true);
 }
 
@@ -1407,6 +1409,97 @@ window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', ()
   if (state.cfg && state.cfg.theme === 'system') applyTheme('system');
 });
 
+/* ---------- 正文缩放 ---------- */
+
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 2;
+const ZOOM_STEP = 0.1;
+
+function clampZoom(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return 1;
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(n * 100) / 100));
+}
+
+function currentZoomScale() {
+  return (
+    parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--content-zoom')) || 1
+  );
+}
+
+/** 内容宽度固定为流区域的原始宽度：zoom 时换行位置才不会被挤窄 */
+function syncContentWidth() {
+  const s = el.stream;
+  if (!s) return;
+
+  const cs = getComputedStyle(s);
+  const baseW = Math.max(
+    0,
+    s.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0),
+  );
+  if (baseW > 0) el.streamInner.style.width = `${baseW}px`;
+}
+
+/** 只缩放对话内容（stream-inner），头部、输入区、设置保持原尺寸。
+ *  zoom 由浏览器重新栅格化，文字清晰；宽度固定保证换行不变。
+ *  传 focus 时以指针位置为中心缩放，手感接近浏览器捏合。 */
+function applyZoom(value, focus) {
+  const scale = clampZoom(value);
+  const s = el.stream;
+  const current = currentZoomScale();
+  const atBottom = s.scrollHeight - s.scrollTop - s.clientHeight < 80;
+
+  let contentX = 0;
+  let contentY = 0;
+  let vx = 0;
+  let vy = 0;
+  let padLeft = 0;
+  let padTop = 0;
+
+  if (focus) {
+    const rect = s.getBoundingClientRect();
+    const cs = getComputedStyle(s);
+    padLeft = parseFloat(cs.paddingLeft) || 0;
+    padTop = parseFloat(cs.paddingTop) || 0;
+    vx = focus.x - rect.left;
+    vy = focus.y - rect.top;
+    contentX = (s.scrollLeft + vx - padLeft) / current;
+    contentY = (s.scrollTop + vy - padTop) / current;
+  }
+
+  document.documentElement.style.setProperty('--content-zoom', String(scale));
+  syncContentWidth();
+
+  if (focus) {
+    s.scrollLeft = padLeft + contentX * scale - vx;
+    s.scrollTop = padTop + contentY * scale - vy;
+  } else if (atBottom) {
+    s.scrollTop = s.scrollHeight;
+  }
+
+  updateToBottom();
+  return scale;
+}
+
+window.addEventListener('resize', syncContentWidth);
+
+let zoomSaveTimer = 0;
+function persistZoom(scale) {
+  clearTimeout(zoomSaveTimer);
+  zoomSaveTimer = setTimeout(() => {
+    zoomSaveTimer = 0;
+    window.api.saveConfig({ zoom: scale });
+  }, 300);
+}
+
+let zoomHintTimer = 0;
+function showZoomHint(zoom) {
+  el.zoomHint.textContent = `${Math.round(zoom * 100)}%`;
+  el.zoomHint.classList.add('show');
+  clearTimeout(zoomHintTimer);
+  zoomHintTimer = setTimeout(() => el.zoomHint.classList.remove('show'), 900);
+}
+
 /* ---------- 下拉菜单：模型 / 推理等级 ---------- */
 
 let openMenuEl = null;
@@ -1493,8 +1586,15 @@ function bindMenu(btn, menu, place) {
 }
 
 async function openSettings() {
+  /* 刚捏合过的话先把待保存的缩放落盘，避免读完配置又被拉回去 */
+  if (zoomSaveTimer) {
+    clearTimeout(zoomSaveTimer);
+    zoomSaveTimer = 0;
+    await window.api.saveConfig({ zoom: state.cfg.zoom });
+  }
   state.cfg = await window.api.getConfig();
   applyTheme(state.cfg.theme);
+  applyZoom(state.cfg.zoom);
   updateMeta();
   el.apiKeyInput.value = state.cfg.hasKey ? state.cfg.apiKeyMasked : '';
   el.apiKeyInput.type = 'password';
@@ -1738,6 +1838,33 @@ el.btnSettingsClose.addEventListener('click', closeSettings);
 el.btnSaveKey.addEventListener('click', saveKey);
 el.btnTestKey.addEventListener('click', testKey);
 
+/* 触控板双指捏合：Chromium 以 ctrl+wheel 送达，只缩放对话内容 */
+let lastZoomAt = 0;
+window.addEventListener(
+  'wheel',
+  (e) => {
+    if (!e.ctrlKey || !e.deltaY) return;
+    if (!(e.target instanceof Element) || !e.target.closest('.stream')) return;
+    e.preventDefault();
+    if (!state.cfg || !el.streamInner.firstElementChild) return;
+
+    const now = Date.now();
+    if (now - lastZoomAt < 60) return;
+    lastZoomAt = now;
+
+    const current = clampZoom(state.cfg.zoom);
+    const next = applyZoom(current + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP), {
+      x: e.clientX,
+      y: e.clientY,
+    });
+    if (next === current) return;
+    state.cfg.zoom = next;
+    showZoomHint(next);
+    persistZoom(next);
+  },
+  { passive: false },
+);
+
 el.themeSwitch.addEventListener('click', async (e) => {
   const btn = e.target.closest('.theme-opt');
   if (!btn) return;
@@ -1860,6 +1987,7 @@ window.api.onSessionCreated(() => {
 (async function boot() {
   state.cfg = await window.api.getConfig();
   applyTheme(state.cfg.theme);
+  applyZoom(state.cfg.zoom);
   /* 图片走独立的内联通道，这里只保留文档扩展名 */
   const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
   FILES_OK = (Array.isArray(state.cfg.fileExts) ? state.cfg.fileExts : []).filter((e) => !imageExts.includes(e));

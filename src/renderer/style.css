@@ -348,8 +348,43 @@ body {
 .stream {
   flex: 1;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
   padding: 20px 22px 10px;
+}
+
+/* 只缩放对话内容：宽度固定在原始值，再用 zoom 放大。
+   宽度固定 → 换行位置不变；zoom 由浏览器重新栅格化 → 文字清晰。
+   放大后内容比窗口宽，靠横向滚动平移 */
+.stream-inner {
+  width: 100%;
+  zoom: var(--content-zoom, 1);
+}
+
+/* ---------- 缩放提示 ---------- */
+
+.zoom-hint {
+  position: absolute;
+  top: 58px;
+  right: 16px;
+  z-index: 65;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elev);
+  box-shadow: var(--shadow-float);
+  color: var(--text-dim);
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0;
+  transform: translateY(-3px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  pointer-events: none;
+}
+
+.zoom-hint.show {
+  opacity: 1;
+  transform: none;
 }
 
 /* 回到底部：只在离底部较远时出现，避免打断阅读 */

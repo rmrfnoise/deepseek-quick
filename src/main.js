@@ -500,6 +500,7 @@ function registerIpc() {
       effort: cfg.effort,
       search: cfg.search,
       theme: cfg.theme,
+      zoom: cfg.zoom,
       models: MODELS,
       efforts: EFFORTS,
       fileExts: filesStore.SUPPORTED,

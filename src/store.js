@@ -15,9 +15,18 @@ const DEFAULTS = {
   effort: DEFAULT_EFFORT,
   search: false,
   theme: 'dark',
+  zoom: 1,
 };
 
 const THEMES = ['dark', 'light', 'system'];
+const ZOOM_MIN = 1;
+const ZOOM_MAX = 2;
+
+function clampZoom(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return DEFAULTS.zoom;
+  return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, Math.round(n * 100) / 100));
+}
 
 function configPath() {
   return path.join(dataDir(), 'config.json');
@@ -37,6 +46,7 @@ function normalize(raw) {
   if (!MODELS.includes(cfg.model)) cfg.model = DEFAULTS.model;
   if (!EFFORTS.includes(cfg.effort)) cfg.effort = DEFAULTS.effort;
   if (!THEMES.includes(cfg.theme)) cfg.theme = DEFAULTS.theme;
+  cfg.zoom = clampZoom(cfg.zoom);
   cfg.search = cfg.search === true;
   return cfg;
 }
