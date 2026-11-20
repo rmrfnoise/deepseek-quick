@@ -21,7 +21,19 @@ function writable(dir) {
 }
 
 function appRoot() {
-  return app.isPackaged ? path.dirname(process.execPath) : app.getAppPath();
+  /* 开发时把 electron.exe 重命名成应用名后，Electron 会误判为已打包。
+     真正的打包产物在 resources 下有 app 目录或 app.asar，用这个来区分。 */
+  if (app.isPackaged) {
+    try {
+      const res = process.resourcesPath;
+      if (fs.existsSync(path.join(res, 'app')) || fs.existsSync(path.join(res, 'app.asar'))) {
+        return path.dirname(process.execPath);
+      }
+    } catch (_) {
+      /* 读不到 resources 就按开发态处理 */
+    }
+  }
+  return app.getAppPath();
 }
 
 /**

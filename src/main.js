@@ -22,6 +22,9 @@ const store = require('./store');
 const sessionsStore = require('./sessions');
 const filesStore = require('./files');
 const brand = require('./brand');
+
+/* Windows 任务栏/通知里的应用身份；进程名由启动用的 exe 名决定 */
+app.setName(brand.NAME);
 const { streamChat, describeError, MODELS, EFFORTS, DEFAULT_MODEL, ENDPOINT } = require('./deepseek');
 const { normalizeUsage, summarize, holidayKnown } = require('./pricing');
 
@@ -319,6 +322,7 @@ function createWindow() {
     skipTaskbar: true,
     alwaysOnTop: true,
     hasShadow: false,
+    icon: path.join(__dirname, 'renderer', 'assets', 'app.png'),
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -1001,6 +1005,7 @@ if (!gotLock) {
     }
 
     registerHotkeys();
+    if (process.platform === 'win32') app.setAppUserModelId('com.deepseek.quick');
     createWindow();
     createTray();
     registerIpc();
