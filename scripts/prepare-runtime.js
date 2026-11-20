@@ -14,6 +14,12 @@ const pkg = require('../package.json');
 
 if (process.platform !== 'win32') process.exit(0);
 
+/* 项目 .npmrc 里配置了 npmmirror；npm 11 会把未知键警告化，
+   这里再显式兜底一次，避免 Electron 去 GitHub 慢速下载 */
+if (!process.env.ELECTRON_MIRROR && !process.env.npm_config_electron_mirror) {
+  process.env.ELECTRON_MIRROR = 'https://npmmirror.com/mirrors/electron/';
+}
+
 const dist = path.join(__dirname, '..', 'node_modules', 'electron', 'dist');
 const electronExe = path.join(dist, 'electron.exe');
 const appExe = path.join(dist, `${brand.NAME}.exe`);
@@ -42,6 +48,20 @@ function linkAppName() {
   fs.unlinkSync(appExe);
   fs.linkSync(electronExe, appExe);
   return true;
+}
+
+/** Electron 45+ 不再在 npm install 时自动下载二进制，改为 require 时懒下载 */
+function ensureElectronBinary() {
+  if (fs.existsSync(electronExe)) return true;
+
+  console.log('[runtime] Electron 运行时缺失，开始下载…');
+  try {
+    require('electron');
+  } catch (err) {
+    console.warn(`[runtime] 下载 Electron 运行时失败：${err.message}`);
+    return false;
+  }
+  return fs.existsSync(electronExe);
 }
 
 async function brandResources() {
@@ -90,6 +110,11 @@ async function brandResources() {
 
 (async () => {
   try {
+    if (!ensureElectronBinary()) {
+      console.warn('[runtime] Electron 运行时不可用，执行 npm install 或检查网络后重试');
+      process.exitCode = 1;
+      return;
+    }
     if (!linkAppName()) {
       console.warn('[runtime] 未找到 electron.exe，跳过运行时品牌化');
       return;
@@ -98,5 +123,6 @@ async function brandResources() {
     console.log(`[runtime] 就绪：${path.basename(appExe)}`);
   } catch (err) {
     console.warn(`[runtime] 准备失败：${err.message}`);
+    process.exitCode = 1;
   }
 })();

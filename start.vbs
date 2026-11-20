@@ -5,6 +5,10 @@ sh.CurrentDirectory = dirPath
 
 exePath = dirPath & "\node_modules\electron\dist\DeepSeek Quick.exe"
 If Not fso.FileExists(exePath) Then
+  ' Electron 45 起运行时按需下载，先补一次运行时和品牌化
+  sh.Run "cmd /c node """ & dirPath & "\scripts\prepare-runtime.js""", 1, True
+End If
+If Not fso.FileExists(exePath) Then
   exePath = dirPath & "\node_modules\electron\dist\electron.exe"
 End If
 If Not fso.FileExists(exePath) Then
