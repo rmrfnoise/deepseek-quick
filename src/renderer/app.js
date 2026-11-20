@@ -1413,7 +1413,8 @@ window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', ()
 
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 2;
-const ZOOM_STEP = 0.1;
+const ZOOM_STEP = 0.05;
+const ZOOM_COMMIT_DELAY = 160;
 
 function clampZoom(value) {
   const n = Number(value);
@@ -1440,10 +1441,76 @@ function syncContentWidth() {
   if (baseW > 0) el.streamInner.style.width = `${baseW}px`;
 }
 
-/** 只缩放对话内容（stream-inner），头部、输入区、设置保持原尺寸。
- *  zoom 由浏览器重新栅格化，文字清晰；宽度固定保证换行不变。
- *  传 focus 时以指针位置为中心缩放，手感接近浏览器捏合。 */
+/* 捏合过程中只在合成器里做 transform（不触发布局，所以跟手）；
+   停手后再落到 CSS zoom，浏览器重新栅格化，文字恢复清晰 */
+let zoomGesture = null;
+let zoomCommitTimer = 0;
+
+function beginZoomGesture(focus) {
+  const s = el.stream;
+  const rect = s.getBoundingClientRect();
+  const cs = getComputedStyle(s);
+  const z = currentZoomScale();
+  const vx = focus.x - rect.left;
+  const vy = focus.y - rect.top;
+  const ox = (s.scrollLeft + vx - (parseFloat(cs.paddingLeft) || 0)) / z;
+  const oy = (s.scrollTop + vy - (parseFloat(cs.paddingTop) || 0)) / z;
+
+  zoomGesture = { z, target: z, ox, oy };
+  const inner = el.streamInner;
+  inner.style.willChange = 'transform';
+  inner.style.transition = 'transform 60ms linear';
+  inner.style.transformOrigin = `${ox}px ${oy}px`;
+  inner.style.transform = 'scale(1)';
+}
+
+function zoomBy(delta, focus) {
+  if (!zoomGesture) beginZoomGesture(focus);
+  const g = zoomGesture;
+  if (!g) return;
+
+  const next = clampZoom(g.target + delta);
+  if (next === g.target) return;
+  g.target = next;
+
+  el.streamInner.style.transform = `scale(${next / g.z})`;
+  showZoomHint(next);
+  clearTimeout(zoomCommitTimer);
+  zoomCommitTimer = setTimeout(commitZoomGesture, ZOOM_COMMIT_DELAY);
+}
+
+function commitZoomGesture() {
+  clearTimeout(zoomCommitTimer);
+  zoomCommitTimer = 0;
+  const g = zoomGesture;
+  if (!g) return;
+  zoomGesture = null;
+
+  const s = el.stream;
+  const inner = el.streamInner;
+  const target = g.target;
+  const sx = s.scrollLeft;
+  const sy = s.scrollTop;
+
+  document.documentElement.style.setProperty('--content-zoom', String(target));
+  inner.style.transition = 'none';
+  inner.style.transform = '';
+  inner.style.transformOrigin = '';
+  inner.style.willChange = '';
+
+  /* 保持捏合中心下的内容不动，再切到最终 zoom */
+  s.scrollLeft = sx + g.ox * (target - g.z);
+  s.scrollTop = sy + g.oy * (target - g.z);
+
+  state.cfg.zoom = target;
+  persistZoom(target);
+  updateToBottom();
+}
+
+/** 直接落定缩放（启动、打开设置时用）；有正在进行的手势先结算 */
 function applyZoom(value, focus) {
+  if (zoomGesture) commitZoomGesture();
+
   const scale = clampZoom(value);
   const s = el.stream;
   const current = currentZoomScale();
@@ -1468,7 +1535,6 @@ function applyZoom(value, focus) {
   }
 
   document.documentElement.style.setProperty('--content-zoom', String(scale));
-  syncContentWidth();
 
   if (focus) {
     s.scrollLeft = padLeft + contentX * scale - vx;
@@ -1481,7 +1547,14 @@ function applyZoom(value, focus) {
   return scale;
 }
 
-window.addEventListener('resize', syncContentWidth);
+window.addEventListener('resize', () => {
+  if (zoomGesture) commitZoomGesture();
+  syncContentWidth();
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) commitZoomGesture();
+});
+window.addEventListener('blur', commitZoomGesture);
 
 let zoomSaveTimer = 0;
 function persistZoom(scale) {
@@ -1839,7 +1912,6 @@ el.btnSaveKey.addEventListener('click', saveKey);
 el.btnTestKey.addEventListener('click', testKey);
 
 /* 触控板双指捏合：Chromium 以 ctrl+wheel 送达，只缩放对话内容 */
-let lastZoomAt = 0;
 window.addEventListener(
   'wheel',
   (e) => {
@@ -1848,19 +1920,11 @@ window.addEventListener(
     e.preventDefault();
     if (!state.cfg || !el.streamInner.firstElementChild) return;
 
-    const now = Date.now();
-    if (now - lastZoomAt < 60) return;
-    lastZoomAt = now;
+    const base = zoomGesture ? zoomGesture.target : clampZoom(state.cfg.zoom);
+    const next = clampZoom(base + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP));
+    if (next === base) return;
 
-    const current = clampZoom(state.cfg.zoom);
-    const next = applyZoom(current + (e.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP), {
-      x: e.clientX,
-      y: e.clientY,
-    });
-    if (next === current) return;
-    state.cfg.zoom = next;
-    showZoomHint(next);
-    persistZoom(next);
+    zoomBy(next - base, { x: e.clientX, y: e.clientY });
   },
   { passive: false },
 );
@@ -1987,6 +2051,7 @@ window.api.onSessionCreated(() => {
 (async function boot() {
   state.cfg = await window.api.getConfig();
   applyTheme(state.cfg.theme);
+  syncContentWidth();
   applyZoom(state.cfg.zoom);
   /* 图片走独立的内联通道，这里只保留文档扩展名 */
   const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
