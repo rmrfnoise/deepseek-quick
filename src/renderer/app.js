@@ -403,10 +403,23 @@ function renderSources(turn, sources) {
   scrollBottom(false);
 }
 
+/* CommonMark 的 emphasis 规则很严格：`**` 内侧紧贴中文引号/标点时，
+   markdown-it 会判定无法开启强调，把星号原样输出。
+   这里在成对的 ** 内侧临时插入私有区字符，绕过 flanking 判断，
+   渲染后再删掉，正文内容不受影响。 */
+const EMPHASIS_PAD = '\uE000';
+
+function relaxCjkEmphasis(text) {
+  return String(text).replace(
+    /\*\*((?:(?!\n\s*\n)[\s\S])+?)\*\*/g,
+    (_, inner) => `**${EMPHASIS_PAD}${inner}${EMPHASIS_PAD}**`,
+  );
+}
+
 function renderMarkdown(text) {
   if (md) {
     try {
-      return md.render(text);
+      return md.render(relaxCjkEmphasis(text)).split(EMPHASIS_PAD).join('');
     } catch (_) {
       /* 落回纯文本 */
     }

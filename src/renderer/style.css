@@ -217,7 +217,9 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   font-feature-settings: "kern" 1;
-  font-synthesis: none;
+  /* 中文回退字体没有 600/700 字重时，允许浏览器合成粗体；
+     否则 **加粗** 在 Windows 上会和正文一样细 */
+  font-synthesis: weight;
   user-select: none;
   scrollbar-width: none;
 }
