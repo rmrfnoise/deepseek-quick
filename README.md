@@ -2,7 +2,7 @@
 
 **按下 `Alt + Space`，即可在 Windows 桌面快速唤出 DeepSeek。**
 
-![主界面](docs/home.png)
+![浅色模式主界面](docs/home.png)
 
 ## 快速开始
 
@@ -19,11 +19,11 @@ npm start
 
 ### 对话界面
 
-![对话](docs/chat.png)
+![浅色模式对话界面](docs/chat.png)
 
 ### 会话管理
 
-![会话](docs/sessions.png)
+![浅色模式会话管理](docs/sessions.png)
 
 ## 安全说明
 
