@@ -27,6 +27,9 @@
       <button class="icon-btn" id="btnSettings" title="设置">
         <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       </button>
+      <button class="icon-btn" id="btnFullscreen" title="全屏">
+        <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+      </button>
       <button class="icon-btn" id="btnClose" title="关闭">
         <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </button>
@@ -101,28 +104,69 @@
       </button>
       <h2>设置</h2>
     </div>
-    <label class="field">
-      <span class="field-label">DeepSeek API KEY</span>
-      <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off" spellcheck="false" />
-      <span class="field-hint" id="keyHint">在 platform.deepseek.com 创建，保存在本机</span>
-    </label>
-    <div class="settings-actions">
-      <button class="btn primary" id="btnSaveKey">保存</button>
-      <button class="btn ghost" id="btnTestKey">测试连通</button>
-    </div>
-    <div class="field">
-      <span class="field-label">外观</span>
-      <div class="theme-switch" id="themeSwitch" role="group" aria-label="外观主题">
-        <button type="button" class="theme-opt" data-theme-choice="dark">深色</button>
-        <button type="button" class="theme-opt" data-theme-choice="light">浅色</button>
-        <button type="button" class="theme-opt" data-theme-choice="system">跟随系统</button>
+
+    <div class="settings-body">
+      <section class="settings-section">
+        <h3 class="settings-section-title">连接</h3>
+        <label class="field">
+          <span class="field-label">DeepSeek API KEY</span>
+          <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off" spellcheck="false" />
+          <span class="field-hint" id="keyHint">在 platform.deepseek.com 创建，保存在本机</span>
+        </label>
+        <div class="settings-actions">
+          <button class="btn primary" id="btnSaveKey">保存</button>
+          <button class="btn ghost" id="btnTestKey">测试连通</button>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3 class="settings-section-title">外观</h3>
+        <div class="theme-switch" id="themeSwitch" role="group" aria-label="外观主题">
+          <button type="button" class="theme-opt" data-theme-choice="dark">深色</button>
+          <button type="button" class="theme-opt" data-theme-choice="light">浅色</button>
+          <button type="button" class="theme-opt" data-theme-choice="system">跟随系统</button>
+        </div>
+      </section>
+
+      <section class="settings-section">
+        <h3 class="settings-section-title">快捷键</h3>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <b>全屏</b>
+            <small>全屏 / 窗口</small>
+          </div>
+          <button type="button" class="shortcut-btn" id="fullscreenKeyBtn">Alt+Enter</button>
+          <button type="button" class="btn ghost shortcut-reset" id="fullscreenKeyReset">恢复默认</button>
+        </div>
+        <span class="field-hint shortcut-hint hidden" id="fullscreenKeyHint"></span>
+
+        <div class="setting-row">
+          <div class="setting-label">
+            <b>换行</b>
+            <small>输入框内换行</small>
+          </div>
+          <button type="button" class="shortcut-btn" id="newlineKeyBtn">Shift+Enter</button>
+          <button type="button" class="btn ghost shortcut-reset" id="newlineKeyReset">恢复默认</button>
+        </div>
+        <span class="field-hint shortcut-hint hidden" id="newlineKeyHint"></span>
+      </section>
+
+      <section class="settings-section">
+        <h3 class="settings-section-title">启动</h3>
+        <label class="switch-row">
+          <input type="checkbox" id="startFullscreenInput" />
+          <span>打开程序时默认进入全屏</span>
+        </label>
+        <span class="field-hint">下次启动生效</span>
+      </section>
+
+      <div class="settings-meta">
+        <div><span>版本</span><b id="metaVersion">-</b></div>
+        <div><span>模型</span><b id="metaModel">deepseek-flash</b></div>
+        <div><span>呼出热键</span><b id="metaHotkey">-</b></div>
+        <div><span>配置文件</span><b class="mono" id="metaPath">-</b></div>
       </div>
-    </div>
-    <div class="settings-meta">
-      <div><span>版本</span><b id="metaVersion">-</b></div>
-      <div><span>模型</span><b id="metaModel">deepseek-flash</b></div>
-      <div><span>热键</span><b id="metaHotkey">-</b></div>
-      <div><span>配置文件</span><b class="mono" id="metaPath">-</b></div>
     </div>
   </section>
 

@@ -13,6 +13,7 @@ const el = {
   btnNew: $('btnNew'),
   btnSessions: $('btnSessions'),
   btnSettings: $('btnSettings'),
+  btnFullscreen: $('btnFullscreen'),
   btnClose: $('btnClose'),
   btnThinking: $('btnThinking'),
   btnModel: $('btnModel'),
@@ -29,6 +30,13 @@ const el = {
   btnSaveKey: $('btnSaveKey'),
   btnTestKey: $('btnTestKey'),
   themeSwitch: $('themeSwitch'),
+  fullscreenKeyBtn: $('fullscreenKeyBtn'),
+  fullscreenKeyReset: $('fullscreenKeyReset'),
+  fullscreenKeyHint: $('fullscreenKeyHint'),
+  newlineKeyBtn: $('newlineKeyBtn'),
+  newlineKeyReset: $('newlineKeyReset'),
+  newlineKeyHint: $('newlineKeyHint'),
+  startFullscreenInput: $('startFullscreenInput'),
   zoomHint: $('zoomHint'),
   sessionTitle: $('sessionTitle'),
   metaModel: $('metaModel'),
@@ -50,10 +58,15 @@ const ICON_STOP = '<rect x="7" y="7" width="10" height="10" rx="2"/>';
 const ICON_CHECK = '<svg class="check" viewBox="0 0 24 24"><path d="m4 12 5 5L20 6"/></svg>';
 const EFFORT_LABELS = { off: 'Off', low: 'Low', high: 'High', max: 'Max' };
 const ICON_X = '<path d="M18 6 6 18M6 6l12 12"/>';
+const ICON_EXPAND =
+  '<path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/>';
+const ICON_COMPRESS =
+  '<path d="M8 3v3a2 2 0 0 1-2 2H3M16 3v3a2 2 0 0 0 2 2h3M8 21v-3a2 2 0 0 0-2-2H3M16 21v-3a2 2 0 0 1 2-2h3"/>';
 
 const state = {
   cfg: null,
   busy: false,
+  fullscreen: false,
   turns: [],
   cur: null,
   renderTimer: null,
@@ -1391,6 +1404,245 @@ function updateMeta() {
   el.btnSearch.classList.toggle('on', state.cfg.search === true);
 }
 
+/* ---------- 全屏与快捷键 ---------- */
+
+const MODIFIER_KEYS = new Set(['Control', 'Alt', 'Shift']);
+const NAMED_SHORTCUT_KEYS = new Set([
+  'Enter',
+  'Tab',
+  'Backspace',
+  'Delete',
+  'Home',
+  'End',
+  'PageUp',
+  'PageDown',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+]);
+
+const SHORTCUT_DEFAULTS = { fullscreen: 'Alt+Enter', newline: 'Shift+Enter' };
+const SHORTCUT_FIELDS = { fullscreen: 'fullscreenHotkey', newline: 'newlineHotkey' };
+
+/* 这些组合在输入框/系统里有固定含义，不允许覆盖 */
+const RESERVED_SHORTCUTS = new Set([
+  'Ctrl+A',
+  'Ctrl+C',
+  'Ctrl+V',
+  'Ctrl+X',
+  'Ctrl+Z',
+  'Ctrl+Y',
+  'Ctrl+F',
+  'Ctrl+S',
+  'Ctrl+P',
+  'Ctrl+N',
+  'Ctrl+O',
+  'Ctrl+R',
+  'Ctrl+W',
+  'Ctrl+L',
+  'Ctrl+T',
+  'Ctrl+Backspace',
+  'Ctrl+Delete',
+  'Ctrl+Space',
+  'Ctrl+Home',
+  'Ctrl+End',
+  'Ctrl+PageUp',
+  'Ctrl+PageDown',
+  'Ctrl+ArrowLeft',
+  'Ctrl+ArrowRight',
+  'Ctrl+ArrowUp',
+  'Ctrl+ArrowDown',
+  'Ctrl+Shift+R',
+  'Ctrl+Shift+ArrowLeft',
+  'Ctrl+Shift+ArrowRight',
+  'Ctrl+Shift+Z',
+  'Ctrl+Shift+S',
+  'Ctrl+Shift+I',
+  'Ctrl+Shift+J',
+  'Ctrl+Shift+C',
+  'Ctrl+Shift+V',
+  'Alt+F4',
+  'Alt+Tab',
+  'Alt+Space',
+  'Alt+ArrowLeft',
+  'Alt+ArrowRight',
+  'Alt+Home',
+  'Ctrl+Alt+Space',
+]);
+
+let recordingShortcut = false;
+let recordingTarget = null;
+
+function shortcutHintEl(target) {
+  return target === 'fullscreen' ? el.fullscreenKeyHint : el.newlineKeyHint;
+}
+
+function shortcutButtonEl(target) {
+  return target === 'fullscreen' ? el.fullscreenKeyBtn : el.newlineKeyBtn;
+}
+
+function shortcutConfigValue(target) {
+  return state.cfg?.[SHORTCUT_FIELDS[target]] || SHORTCUT_DEFAULTS[target];
+}
+
+function shortcutKeyFromEvent(e) {
+  const key = e.key;
+  if (!key || MODIFIER_KEYS.has(key)) return '';
+  if (key === ' ') return 'Space';
+  if (key.length === 1 && /[a-z0-9]/i.test(key)) return key.toUpperCase();
+  if (/^F([1-9]|1[0-2])$/.test(key)) return key;
+  if (NAMED_SHORTCUT_KEYS.has(key)) return key;
+  return '';
+}
+
+/** 生成统一格式的快捷键串；Meta 不支持 */
+function shortcutFromEvent(e) {
+  if (e.isComposing || e.metaKey) return '';
+  const key = shortcutKeyFromEvent(e);
+  if (!key) return '';
+  const mods = [];
+  if (e.ctrlKey) mods.push('Ctrl');
+  if (e.altKey) mods.push('Alt');
+  if (e.shiftKey) mods.push('Shift');
+  return [...mods, key].join('+');
+}
+
+function isShortcutValidFor(target, combo) {
+  const parts = combo.split('+');
+  const key = parts.pop();
+  const mods = parts;
+  const hasMainMod = mods.some((m) => m === 'Ctrl' || m === 'Alt');
+  if (target === 'fullscreen') return hasMainMod;
+  return hasMainMod || (mods.length === 1 && mods[0] === 'Shift' && key === 'Enter');
+}
+
+function shortcutConflict(target, combo) {
+  const other = target === 'fullscreen' ? 'newline' : 'fullscreen';
+  if (combo === shortcutConfigValue(other)) {
+    return `和${other === 'fullscreen' ? '全屏' : '换行'}快捷键冲突`;
+  }
+  if (combo === state.cfg.hotkey || combo === state.cfg.expectedHotkey) {
+    return '和呼出窗口的全局热键冲突';
+  }
+  if (RESERVED_SHORTCUTS.has(combo)) return '这是系统或编辑快捷键，请换一个';
+  return '';
+}
+
+function setShortcutHint(target, text, kind = '') {
+  const hint = shortcutHintEl(target);
+  hint.textContent = text;
+  hint.classList.toggle('hidden', !text);
+  hint.classList.toggle('ok', Boolean(text) && kind === 'ok');
+  hint.classList.toggle('bad', Boolean(text) && kind === 'bad');
+}
+
+function renderShortcutButton(target) {
+  shortcutButtonEl(target).textContent = shortcutConfigValue(target);
+}
+
+function renderShortcutButtons() {
+  renderShortcutButton('fullscreen');
+  renderShortcutButton('newline');
+  el.btnFullscreen.title = `${state.fullscreen ? '退出全屏' : '全屏'}（${shortcutConfigValue(
+    'fullscreen',
+  )}）`;
+}
+
+function stopShortcutRecording() {
+  recordingShortcut = false;
+  recordingTarget = null;
+  el.fullscreenKeyBtn.classList.remove('recording');
+  el.newlineKeyBtn.classList.remove('recording');
+  renderShortcutButtons();
+}
+
+function startShortcutRecording(target) {
+  if (!state.cfg) return;
+  if (recordingShortcut) stopShortcutRecording();
+  recordingShortcut = true;
+  recordingTarget = target;
+  const btn = shortcutButtonEl(target);
+  btn.classList.add('recording');
+  btn.textContent = '按下新的快捷键…';
+  setShortcutHint(target, '按下组合键，Esc 取消');
+  btn.focus();
+}
+
+async function saveShortcut(target, combo) {
+  if (!isShortcutValidFor(target, combo)) {
+    setShortcutHint(
+      target,
+      target === 'fullscreen' ? '全屏快捷键需要包含 Ctrl 或 Alt' : '换行只能用 Shift+Enter，或 Ctrl/Alt 组合',
+      'bad',
+    );
+    return;
+  }
+  const conflict = shortcutConflict(target, combo);
+  if (conflict) {
+    setShortcutHint(target, conflict, 'bad');
+    return;
+  }
+
+  state.cfg[SHORTCUT_FIELDS[target]] = combo;
+  stopShortcutRecording();
+  setShortcutHint(target, `已保存：${combo}`, 'ok');
+  await window.api.saveConfig({ [SHORTCUT_FIELDS[target]]: combo });
+}
+
+function resetShortcut(target) {
+  if (recordingShortcut) stopShortcutRecording();
+  const combo = SHORTCUT_DEFAULTS[target];
+  const conflict = shortcutConflict(target, combo);
+  if (conflict) {
+    setShortcutHint(target, conflict, 'bad');
+    return;
+  }
+  saveShortcut(target, combo);
+}
+
+function handleShortcutRecording(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const target = recordingTarget;
+  if (!target) return;
+
+  if (e.key === 'Escape') {
+    stopShortcutRecording();
+    setShortcutHint(target, '已取消，仍使用原来的快捷键');
+    return;
+  }
+  if (MODIFIER_KEYS.has(e.key)) {
+    setShortcutHint(target, '再按一个非修饰键…');
+    return;
+  }
+  if (e.metaKey) {
+    setShortcutHint(target, '不支持 Win/Meta 键，请只用 Ctrl / Alt / Shift', 'bad');
+    return;
+  }
+  const combo = shortcutFromEvent(e);
+  if (!combo) {
+    setShortcutHint(target, '需要 Ctrl / Alt / Shift 加一个键', 'bad');
+    return;
+  }
+  saveShortcut(target, combo);
+}
+
+function applyFullscreen(on) {
+  state.fullscreen = Boolean(on);
+  document.body.classList.toggle('fullscreen', state.fullscreen);
+  el.btnFullscreen.innerHTML = `<svg viewBox="0 0 24 24">${
+    state.fullscreen ? ICON_COMPRESS : ICON_EXPAND
+  }</svg>`;
+  renderShortcutButtons();
+  syncContentWidth();
+}
+
+async function toggleFullscreen() {
+  const res = await window.api.setFullscreen(!state.fullscreen);
+  if (res && res.ok) applyFullscreen(res.fullscreen);
+}
+
 /* ---------- 主题 ---------- */
 
 const THEME_CHOICES = ['dark', 'light', 'system'];
@@ -1682,6 +1934,11 @@ async function openSettings() {
   applyTheme(state.cfg.theme);
   applyZoom(state.cfg.zoom);
   updateMeta();
+  stopShortcutRecording();
+  renderShortcutButtons();
+  el.startFullscreenInput.checked = state.cfg.startFullscreen === true;
+  setShortcutHint('fullscreen', '');
+  setShortcutHint('newline', '');
   el.apiKeyInput.value = state.cfg.hasKey ? state.cfg.apiKeyMasked : '';
   el.apiKeyInput.type = 'password';
   setKeyHint(
@@ -1690,11 +1947,14 @@ async function openSettings() {
       : '在 platform.deepseek.com 创建后粘贴，可先“测试连通”再保存',
   );
   el.settings.classList.remove('hidden');
+  const body = el.settings.querySelector('.settings-body');
+  if (body) body.scrollTop = 0;
   el.apiKeyInput.focus();
   el.apiKeyInput.select();
 }
 
 function closeSettings() {
+  if (recordingShortcut) stopShortcutRecording();
   el.settings.classList.add('hidden');
   el.input.focus();
 }
@@ -1872,11 +2132,28 @@ el.input.addEventListener('input', () => {
   updateSendState();
 });
 
+function insertNewline() {
+  const input = el.input;
+  const start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? start;
+  input.setRangeText('\n', start, end, 'end');
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 el.input.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+  if (e.isComposing || e.key !== 'Enter') return;
+  const combo = shortcutFromEvent(e);
+  if (combo && combo === (state.cfg?.newlineHotkey || 'Shift+Enter')) {
+    /* Shift+Enter 直接交给浏览器，保留原生换行和撤销栈 */
+    if (combo === 'Shift+Enter') return;
     e.preventDefault();
-    submit();
+    insertNewline();
+    return;
   }
+  /* 改键后仍保留 Shift+Enter 这个最常用的换行习惯 */
+  if (e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) return;
+  e.preventDefault();
+  if (!e.shiftKey) submit();
 });
 
 document.addEventListener('keydown', (e) => {
@@ -1889,6 +2166,7 @@ document.addEventListener('keydown', (e) => {
     closeSessions();
     return;
   }
+  if (state.fullscreen) return;
   window.api.hide();
 });
 
@@ -1921,6 +2199,61 @@ el.btnClearAll.addEventListener('click', async () => {
 el.btnClose.addEventListener('click', () => window.api.hide());
 el.btnSettings.addEventListener('click', openSettings);
 el.btnSettingsClose.addEventListener('click', closeSettings);
+el.btnFullscreen.addEventListener('click', toggleFullscreen);
+el.fullscreenKeyBtn.addEventListener('click', () => {
+  if (recordingShortcut && recordingTarget === 'fullscreen') {
+    stopShortcutRecording();
+    setShortcutHint('fullscreen', '已取消，仍使用原来的快捷键');
+  } else {
+    startShortcutRecording('fullscreen');
+  }
+});
+el.newlineKeyBtn.addEventListener('click', () => {
+  if (recordingShortcut && recordingTarget === 'newline') {
+    stopShortcutRecording();
+    setShortcutHint('newline', '已取消，仍使用原来的快捷键');
+  } else {
+    startShortcutRecording('newline');
+  }
+});
+el.fullscreenKeyReset.addEventListener('click', () => resetShortcut('fullscreen'));
+el.newlineKeyReset.addEventListener('click', () => resetShortcut('newline'));
+el.settings.addEventListener('click', (e) => {
+  if (!recordingShortcut) return;
+  if (e.target instanceof Element && e.target.closest('.shortcut-btn')) return;
+  const target = recordingTarget;
+  stopShortcutRecording();
+  if (target) setShortcutHint(target, '已取消，仍使用原来的快捷键');
+});
+el.startFullscreenInput.addEventListener('change', () => {
+  state.cfg.startFullscreen = el.startFullscreenInput.checked;
+  window.api.saveConfig({ startFullscreen: state.cfg.startFullscreen });
+});
+
+document.addEventListener(
+  'keydown',
+  (e) => {
+    if (recordingShortcut) {
+      handleShortcutRecording(e);
+      return;
+    }
+    if (!state.cfg) return;
+    const combo = shortcutFromEvent(e);
+    if (!combo || combo !== shortcutConfigValue('fullscreen')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.repeat) toggleFullscreen();
+  },
+  true,
+);
+
+window.addEventListener('blur', () => {
+  if (!recordingShortcut) return;
+  const target = recordingTarget;
+  stopShortcutRecording();
+  if (target) setShortcutHint(target, '已取消，仍使用原来的快捷键');
+});
+
 el.btnSaveKey.addEventListener('click', saveKey);
 el.btnTestKey.addEventListener('click', testKey);
 
@@ -2047,6 +2380,7 @@ window.api.onShown(() => {
 });
 
 window.api.onOpenSettings(() => openSettings());
+window.api.onFullscreen((value) => applyFullscreen(value));
 
 window.api.onSessionCreated(() => {
   if (state.busy) window.api.abort();
@@ -2066,6 +2400,7 @@ window.api.onSessionCreated(() => {
   applyTheme(state.cfg.theme);
   syncContentWidth();
   applyZoom(state.cfg.zoom);
+  applyFullscreen(state.cfg.fullscreen === true);
   /* 图片走独立的内联通道，这里只保留文档扩展名 */
   const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
   FILES_OK = (Array.isArray(state.cfg.fileExts) ? state.cfg.fileExts : []).filter((e) => !imageExts.includes(e));

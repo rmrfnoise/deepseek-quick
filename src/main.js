@@ -294,6 +294,10 @@ let tray = null;
 let activeHotkey = null;
 let activeAbort = null;
 let quitting = false;
+/* 透明无边框窗口在 Windows 上走 setFullScreen 时 isFullScreen() 不会置位，
+   这里自己保存窗口边界，用 setBounds 实现可进可出的全屏 */
+let fullscreen = false;
+let normalBounds = null;
 /* 系统对话框（选文件）期间不计失焦，否则窗口会自己藏起来 */
 let dialogOpen = 0;
 
@@ -318,7 +322,7 @@ function createWindow() {
     resizable: true,
     minimizable: false,
     maximizable: false,
-    fullscreenable: false,
+    fullscreenable: true,
     skipTaskbar: true,
     alwaysOnTop: true,
     hasShadow: false,
@@ -338,6 +342,8 @@ function createWindow() {
 
   win.on('blur', () => {
     if (quitting) return;
+    /* 全屏阅读时不要因为点到别的窗口就自动隐藏 */
+    if (fullscreen) return;
     if (win.webContents.isDevToolsOpened()) return;
     /* 打开系统文件对话框时窗口必然失焦，这时候不能把自己藏起来；
        对话框刚关掉的那一瞬间也可能补发一次 blur，稍等一下再看焦点在哪 */
@@ -345,6 +351,7 @@ function createWindow() {
     setTimeout(() => {
       if (quitting || dialogOpen > 0) return;
       if (!win || win.isDestroyed() || win.isFocused()) return;
+      if (fullscreen) return;
       hideWindow();
     }, 40);
   });
@@ -376,8 +383,34 @@ function showWindow() {
   win.webContents.send('ui:shown');
 }
 
+function setFullscreen(value) {
+  if (!win || win.isDestroyed()) return false;
+  const next = Boolean(value);
+  if (next === fullscreen) return fullscreen;
+
+  if (next) {
+    normalBounds = win.getBounds();
+    const display = screen.getDisplayMatching(normalBounds);
+    win.setResizable(false);
+    win.setBounds(display.bounds);
+    fullscreen = true;
+  } else {
+    fullscreen = false;
+    win.setResizable(true);
+    if (normalBounds) win.setBounds(normalBounds);
+    normalBounds = null;
+  }
+
+  if (!win.isDestroyed() && !win.webContents.isLoading()) {
+    win.webContents.send('ui:fullscreen', fullscreen);
+  }
+  return fullscreen;
+}
+
 function hideWindow() {
   if (!win || !win.isVisible()) return;
+  /* 关闭/隐藏时退出全屏，下次唤出仍是正常尺寸 */
+  if (fullscreen) setFullscreen(false);
   win.hide();
 }
 
@@ -505,6 +538,10 @@ function registerIpc() {
       search: cfg.search,
       theme: cfg.theme,
       zoom: cfg.zoom,
+      fullscreenHotkey: cfg.fullscreenHotkey,
+      newlineHotkey: cfg.newlineHotkey,
+      startFullscreen: cfg.startFullscreen,
+      fullscreen,
       models: MODELS,
       efforts: EFFORTS,
       fileExts: filesStore.SUPPORTED,
@@ -895,6 +932,11 @@ function registerIpc() {
     return { ok: true };
   });
 
+  ipcMain.handle('window:set-fullscreen', (_e, value) => {
+    const on = setFullscreen(value);
+    return { ok: true, fullscreen: on };
+  });
+
   ipcMain.handle('shell:open-external', (_e, url) => {
     const raw = String(url || '');
     if (!/^https?:\/\//i.test(raw)) return { ok: false };
@@ -1013,6 +1055,7 @@ if (!gotLock) {
     console.log('========================================');
     store.migrate();
     const boot = store.load();
+    if (boot.startFullscreen) setFullscreen(true);
     console.log(` ${brand.NAME}  (model: ${boot.model}, effort: ${boot.effort})`);
     console.log(` 热键注册结果: ${activeHotkey || '失败 —— 两个候选键均被占用'}`);
     console.log(` 数据目录: ${DATA_ROOT}`);

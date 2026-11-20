@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('api', {
   clearSessions: () => ipcRenderer.invoke('session:clear'),
 
   hide: () => ipcRenderer.invoke('window:hide'),
+  setFullscreen: (value) => ipcRenderer.invoke('window:set-fullscreen', value),
   copy: (text) => ipcRenderer.invoke('clipboard:write', text),
   stashFile: (payload) => ipcRenderer.invoke('file:stash', payload),
   readImage: (filePath) => ipcRenderer.invoke('file:read-image', filePath),
@@ -63,6 +64,11 @@ contextBridge.exposeInMainWorld('api', {
     const handler = () => cb();
     ipcRenderer.on('ui:open-settings', handler);
     return () => ipcRenderer.removeListener('ui:open-settings', handler);
+  },
+  onFullscreen: (cb) => {
+    const handler = (_e, value) => cb(value);
+    ipcRenderer.on('ui:fullscreen', handler);
+    return () => ipcRenderer.removeListener('ui:fullscreen', handler);
   },
   onSessionCreated: (cb) => {
     const handler = () => cb();

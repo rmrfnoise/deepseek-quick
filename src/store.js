@@ -16,11 +16,72 @@ const DEFAULTS = {
   search: false,
   theme: 'dark',
   zoom: 1,
+  fullscreenHotkey: 'Alt+Enter',
+  newlineHotkey: 'Shift+Enter',
+  startFullscreen: false,
 };
 
 const THEMES = ['dark', 'light', 'system'];
 const ZOOM_MIN = 1;
 const ZOOM_MAX = 2;
+
+const HOTKEY_MODS = ['Ctrl', 'Alt', 'Shift'];
+const HOTKEY_KEYS = new Set([
+  'Enter',
+  'Space',
+  'Tab',
+  'Backspace',
+  'Delete',
+  'Home',
+  'End',
+  'PageUp',
+  'PageDown',
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+  ...'0123456789',
+  ...Array.from({ length: 12 }, (_, i) => `F${i + 1}`),
+]);
+
+/** 只接受“修饰键 + 单个键”，且必须包含 Ctrl/Alt，避免误占用普通字母 */
+function normalizeFullscreenHotkey(value) {
+  const raw = String(value || '').trim();
+  const parts = raw.split('+').filter(Boolean);
+  if (parts.length < 2) return DEFAULTS.fullscreenHotkey;
+
+  const key = parts.pop();
+  const mods = parts;
+  if (!mods.every((m) => HOTKEY_MODS.includes(m)) || new Set(mods).size !== mods.length) {
+    return DEFAULTS.fullscreenHotkey;
+  }
+  if (!mods.some((m) => m !== 'Shift')) return DEFAULTS.fullscreenHotkey;
+  if (!HOTKEY_KEYS.has(key)) return DEFAULTS.fullscreenHotkey;
+
+  const ordered = HOTKEY_MODS.filter((m) => mods.includes(m));
+  return [...ordered, key].join('+');
+}
+
+/** 换行允许 Shift+Enter；Shift 加其他键会和正常输入冲突，拒绝 */
+function normalizeNewlineHotkey(value) {
+  const raw = String(value || '').trim();
+  const parts = raw.split('+').filter(Boolean);
+  if (parts.length < 2) return DEFAULTS.newlineHotkey;
+
+  const key = parts.pop();
+  const mods = parts;
+  if (!mods.every((m) => HOTKEY_MODS.includes(m)) || new Set(mods).size !== mods.length) {
+    return DEFAULTS.newlineHotkey;
+  }
+  if (!HOTKEY_KEYS.has(key)) return DEFAULTS.newlineHotkey;
+
+  const hasMainMod = mods.some((m) => m === 'Ctrl' || m === 'Alt');
+  if (!hasMainMod && !(mods.length === 1 && key === 'Enter')) return DEFAULTS.newlineHotkey;
+
+  const ordered = HOTKEY_MODS.filter((m) => mods.includes(m));
+  return [...ordered, key].join('+');
+}
 
 function clampZoom(value) {
   const n = Number(value);
@@ -47,6 +108,11 @@ function normalize(raw) {
   if (!EFFORTS.includes(cfg.effort)) cfg.effort = DEFAULTS.effort;
   if (!THEMES.includes(cfg.theme)) cfg.theme = DEFAULTS.theme;
   cfg.zoom = clampZoom(cfg.zoom);
+  cfg.fullscreenHotkey = normalizeFullscreenHotkey(cfg.fullscreenHotkey);
+  cfg.newlineHotkey = normalizeNewlineHotkey(cfg.newlineHotkey);
+  if (cfg.fullscreenHotkey === cfg.newlineHotkey) cfg.newlineHotkey = DEFAULTS.newlineHotkey;
+  if (cfg.fullscreenHotkey === cfg.newlineHotkey) cfg.fullscreenHotkey = DEFAULTS.fullscreenHotkey;
+  cfg.startFullscreen = cfg.startFullscreen === true;
   cfg.search = cfg.search === true;
   return cfg;
 }
