@@ -259,11 +259,22 @@ body.fullscreen .titlebar {
 }
 
 body.fullscreen .notice,
-body.fullscreen .stream,
 body.fullscreen .composer {
   width: 100%;
   max-width: 960px;
   align-self: center;
+}
+
+/* 放大后让流区域跟着变宽，避免正文被 960px 的列宽裁掉；
+   内容基准宽度仍由 JS 固定在 960px，换行位置不因全屏而改变 */
+body.fullscreen .stream {
+  width: 100%;
+  max-width: min(100%, calc(960px * var(--content-zoom, 1)));
+  align-self: center;
+}
+
+body.fullscreen .stream-inner {
+  margin: 0 auto;
 }
 
 /* ---------- 标题栏 ---------- */

@@ -1699,10 +1699,13 @@ function syncContentWidth() {
   if (!s) return;
 
   const cs = getComputedStyle(s);
-  const baseW = Math.max(
-    0,
-    s.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0),
-  );
+  const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+  let baseW = Math.max(0, s.clientWidth - pad);
+
+  /* 全屏时流区域会随 zoom 变宽，但正文基准宽度仍固定在 960px 内，
+     否则放大后行宽变化，换行位置会跳 */
+  if (state.fullscreen) baseW = Math.min(baseW, 960 - pad);
+
   if (baseW > 0) el.streamInner.style.width = `${baseW}px`;
 }
 
