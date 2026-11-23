@@ -473,8 +473,12 @@ function registerHotkeys() {
 function createTray() {
   const icon = nativeImage.createFromPath(path.join(__dirname, 'renderer', 'assets', 'tray16.png'));
   tray = new Tray(icon);
+  /* TAGLINE 里已经写了 Alt+Space，再拼一次键名悬停提示就重复了；
+     只有回退到备用键、或热键没注册上时，才把真实状态补在后面 */
   tray.setToolTip(
-    activeHotkey ? `${brand.NAME} · ${brand.TAGLINE} · ${activeHotkey}` : `${brand.NAME} · 热键未生效`
+    activeHotkey === PRIMARY_HOTKEY
+      ? `${brand.NAME} · ${brand.TAGLINE}`
+      : `${brand.NAME} · ${activeHotkey ? `热键 ${activeHotkey}` : '热键未生效'}`
   );
 
   const menu = Menu.buildFromTemplate([
