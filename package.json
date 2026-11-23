@@ -1,6 +1,6 @@
 {
   "name": "deepseek-quick",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Alt+Space 唤出的 DeepSeek 桌面速问：流式对话、联网搜索、读链接、看图、传文件（Electron 便携版）",
   "main": "src/main.js",
   "scripts": {
