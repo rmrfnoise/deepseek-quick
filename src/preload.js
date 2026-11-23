@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('api', {
   hide: () => ipcRenderer.invoke('window:hide'),
   setFullscreen: (value) => ipcRenderer.invoke('window:set-fullscreen', value),
   setPinned: (value) => ipcRenderer.invoke('window:set-pinned', value),
+  setAutostart: (value) => ipcRenderer.invoke('app:set-autostart', value),
   copy: (text) => ipcRenderer.invoke('clipboard:write', text),
   stashFile: (payload) => ipcRenderer.invoke('file:stash', payload),
   readImage: (filePath) => ipcRenderer.invoke('file:read-image', filePath),

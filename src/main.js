@@ -3,6 +3,7 @@
 const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
+const { execFileSync } = require('child_process');
 const {
   app,
   BrowserWindow,
@@ -517,6 +518,73 @@ function createTray() {
   tray.on('click', toggleWindow);
 }
 
+/* ---------- 开机自启 ---------- */
+
+/* 纯便携版没有安装器，开机自启就写当前用户的 Run 键；
+   程序目录被删掉等于卸载，程序目录被挪走时下次启动会按新路径刷新 */
+const AUTOSTART_KEY = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run';
+const AUTOSTART_VALUE = brand.NAME;
+
+/** 开发态 exe 在 node_modules 里，要连 app 目录一起传；打包后 app 目录就是 exe 目录 */
+function autostartCommand() {
+  const exe = process.execPath;
+  const root = paths.appRoot();
+  const sameDir = path.resolve(root).toLowerCase() === path.dirname(exe).toLowerCase();
+  return sameDir ? `"${exe}"` : `"${exe}" "${root}"`;
+}
+
+function autostartEnabled() {
+  if (process.platform !== 'win32') return false;
+  try {
+    execFileSync('reg', ['query', AUTOSTART_KEY, '/v', AUTOSTART_VALUE], {
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function writeAutostart(enabled) {
+  if (enabled) {
+    execFileSync(
+      'reg',
+      ['add', AUTOSTART_KEY, '/v', AUTOSTART_VALUE, '/t', 'REG_SZ', '/d', autostartCommand(), '/f'],
+      { stdio: 'ignore', windowsHide: true }
+    );
+  } else {
+    execFileSync('reg', ['delete', AUTOSTART_KEY, '/v', AUTOSTART_VALUE, '/f'], {
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+  }
+}
+
+function setAutostart(value) {
+  if (process.platform !== 'win32') return { ok: false, enabled: false, error: '仅支持 Windows' };
+  const want = Boolean(value);
+  if (want === autostartEnabled()) return { ok: true, enabled: want };
+  try {
+    writeAutostart(want);
+  } catch (_) {
+    return { ok: false, enabled: autostartEnabled(), error: '写入注册表失败' };
+  }
+  const now = autostartEnabled();
+  if (now === want) return { ok: true, enabled: now };
+  return { ok: false, enabled: now, error: now ? '开启未生效' : '关闭未生效' };
+}
+
+/** 已有自启项但程序被挪过位置时，注册表里是旧路径；按当前路径重写一次 */
+function syncAutostart() {
+  if (!autostartEnabled()) return;
+  try {
+    writeAutostart(true);
+  } catch (_) {
+    /* 写不进去就算了，用户在设置里再开关一次会重写 */
+  }
+}
+
 /* ---------- IPC ---------- */
 
 const IMAGE_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
@@ -562,6 +630,7 @@ function registerIpc() {
       fullscreenHotkey: cfg.fullscreenHotkey,
       newlineHotkey: cfg.newlineHotkey,
       startFullscreen: cfg.startFullscreen,
+      autostart: autostartEnabled(),
       pinned,
       fullscreen,
       models: MODELS,
@@ -961,6 +1030,8 @@ function registerIpc() {
 
   ipcMain.handle('window:set-pinned', (_e, value) => ({ ok: true, pinned: setPinned(value) }));
 
+  ipcMain.handle('app:set-autostart', (_e, value) => setAutostart(value));
+
   ipcMain.handle('shell:open-external', (_e, url) => {
     const raw = String(url || '');
     if (!/^https?:\/\//i.test(raw)) return { ok: false };
@@ -1075,6 +1146,8 @@ if (!gotLock) {
     createWindow();
     createTray();
     registerIpc();
+    /* 程序目录可能被挪过，自启项里的路径按当前位置刷新 */
+    syncAutostart();
 
     console.log('========================================');
     store.migrate();

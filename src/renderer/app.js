@@ -38,6 +38,8 @@ const el = {
   newlineKeyReset: $('newlineKeyReset'),
   newlineKeyHint: $('newlineKeyHint'),
   startFullscreenInput: $('startFullscreenInput'),
+  autostartInput: $('autostartInput'),
+  autostartHint: $('autostartHint'),
   zoomHint: $('zoomHint'),
   sessionTitle: $('sessionTitle'),
   metaModel: $('metaModel'),
@@ -1390,6 +1392,13 @@ function setKeyHint(text, kind) {
   el.keyHint.className = `field-hint${kind ? ` ${kind}` : ''}`;
 }
 
+const AUTOSTART_HINT = '登录 Windows 后自动在托盘后台启动，不弹窗口';
+
+function setAutostartHint(text, kind) {
+  el.autostartHint.textContent = text || AUTOSTART_HINT;
+  el.autostartHint.className = `field-hint${kind ? ` ${kind}` : ''}`;
+}
+
 /* ---------- 界面字体已固定为官方风格（Inter + 系统中文） ---------- */
 
 function currentModel() {
@@ -1963,6 +1972,8 @@ async function openSettings() {
   stopShortcutRecording();
   renderShortcutButtons();
   el.startFullscreenInput.checked = state.cfg.startFullscreen === true;
+  el.autostartInput.checked = state.cfg.autostart === true;
+  setAutostartHint('');
   setShortcutHint('fullscreen', '');
   setShortcutHint('newline', '');
   el.apiKeyInput.value = state.cfg.hasKey ? state.cfg.apiKeyMasked : '';
@@ -2255,6 +2266,14 @@ el.settings.addEventListener('click', (e) => {
 el.startFullscreenInput.addEventListener('change', () => {
   state.cfg.startFullscreen = el.startFullscreenInput.checked;
   window.api.saveConfig({ startFullscreen: state.cfg.startFullscreen });
+});
+
+/* 开机自启直接落在注册表 Run 键，以主进程回读的状态为准 */
+el.autostartInput.addEventListener('change', async () => {
+  const res = await window.api.setAutostart(el.autostartInput.checked);
+  state.cfg.autostart = Boolean(res && res.enabled);
+  el.autostartInput.checked = state.cfg.autostart;
+  setAutostartHint(res && res.ok ? '' : `设置失败：${(res && res.error) || '未知错误'}`, res && res.ok ? '' : 'bad');
 });
 
 document.addEventListener(
