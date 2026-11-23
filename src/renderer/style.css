@@ -170,12 +170,6 @@
   border-color: rgba(0, 0, 0, 0.12);
 }
 
-/* 深色版 logo 的白肚皮在浅色底上会糊成一片，换一份淡蓝细节的 */
-:root[data-theme="light"] .mark,
-:root[data-theme="light"] .empty-mark {
-  content: url("assets/logo-light.svg");
-}
-
 /* 文件类型徽标：浅色底上加深文字，保持可读 */
 :root[data-theme="light"] .doc-badge.ext-pdf { color: #a33a33; }
 :root[data-theme="light"] .doc-badge.ext-doc,
@@ -296,6 +290,8 @@ body.fullscreen .stream-inner {
   min-width: 0;
 }
 
+/* logo 用官方原图：白肚皮和眼白本来就是镂空，浅色底上透出背景、深色底上就是白色，
+   深浅两套主题共用这一份，不再单独做浅色版 */
 .mark {
   height: 15px;
   width: auto;
