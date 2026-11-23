@@ -19,6 +19,7 @@ const DEFAULTS = {
   fullscreenHotkey: 'Alt+Enter',
   newlineHotkey: 'Shift+Enter',
   startFullscreen: false,
+  pinned: false,
 };
 
 const THEMES = ['dark', 'light', 'system'];
@@ -113,6 +114,7 @@ function normalize(raw) {
   if (cfg.fullscreenHotkey === cfg.newlineHotkey) cfg.newlineHotkey = DEFAULTS.newlineHotkey;
   if (cfg.fullscreenHotkey === cfg.newlineHotkey) cfg.fullscreenHotkey = DEFAULTS.fullscreenHotkey;
   cfg.startFullscreen = cfg.startFullscreen === true;
+  cfg.pinned = cfg.pinned === true;
   cfg.search = cfg.search === true;
   return cfg;
 }

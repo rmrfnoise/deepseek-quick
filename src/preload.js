@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('api', {
 
   hide: () => ipcRenderer.invoke('window:hide'),
   setFullscreen: (value) => ipcRenderer.invoke('window:set-fullscreen', value),
+  setPinned: (value) => ipcRenderer.invoke('window:set-pinned', value),
   copy: (text) => ipcRenderer.invoke('clipboard:write', text),
   stashFile: (payload) => ipcRenderer.invoke('file:stash', payload),
   readImage: (filePath) => ipcRenderer.invoke('file:read-image', filePath),
@@ -69,6 +70,11 @@ contextBridge.exposeInMainWorld('api', {
     const handler = (_e, value) => cb(value);
     ipcRenderer.on('ui:fullscreen', handler);
     return () => ipcRenderer.removeListener('ui:fullscreen', handler);
+  },
+  onPinned: (cb) => {
+    const handler = (_e, value) => cb(value);
+    ipcRenderer.on('ui:pinned', handler);
+    return () => ipcRenderer.removeListener('ui:pinned', handler);
   },
   onSessionCreated: (cb) => {
     const handler = () => cb();

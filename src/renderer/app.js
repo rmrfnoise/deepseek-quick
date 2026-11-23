@@ -14,6 +14,7 @@ const el = {
   btnSessions: $('btnSessions'),
   btnSettings: $('btnSettings'),
   btnFullscreen: $('btnFullscreen'),
+  btnPin: $('btnPin'),
   btnClose: $('btnClose'),
   btnThinking: $('btnThinking'),
   btnModel: $('btnModel'),
@@ -67,6 +68,7 @@ const state = {
   cfg: null,
   busy: false,
   fullscreen: false,
+  pinned: false,
   turns: [],
   cur: null,
   renderTimer: null,
@@ -1643,6 +1645,23 @@ async function toggleFullscreen() {
   if (res && res.ok) applyFullscreen(res.fullscreen);
 }
 
+/* ---------- 窗口置顶 ---------- */
+
+/** 只有标题栏图钉一个入口，状态以主进程为准 */
+function applyPinned(on) {
+  state.pinned = Boolean(on);
+  if (state.cfg) state.cfg.pinned = state.pinned;
+  el.btnPin.classList.toggle('on', state.pinned);
+  el.btnPin.title = state.pinned ? '取消置顶' : '窗口置顶';
+  el.btnPin.setAttribute('aria-pressed', state.pinned ? 'true' : 'false');
+}
+
+async function setPinned(value) {
+  const res = await window.api.setPinned(value);
+  /* 主进程说了算：失败时按旧状态回滚，别让界面显示成已生效 */
+  applyPinned(res && res.ok ? res.pinned : state.pinned);
+}
+
 /* ---------- 主题 ---------- */
 
 const THEME_CHOICES = ['dark', 'light', 'system'];
@@ -1936,6 +1955,7 @@ async function openSettings() {
   state.cfg = await window.api.getConfig();
   applyTheme(state.cfg.theme);
   applyZoom(state.cfg.zoom);
+  applyPinned(state.cfg.pinned === true);
   updateMeta();
   stopShortcutRecording();
   renderShortcutButtons();
@@ -2203,6 +2223,7 @@ el.btnClose.addEventListener('click', () => window.api.hide());
 el.btnSettings.addEventListener('click', openSettings);
 el.btnSettingsClose.addEventListener('click', closeSettings);
 el.btnFullscreen.addEventListener('click', toggleFullscreen);
+el.btnPin.addEventListener('click', () => setPinned(!state.pinned));
 el.fullscreenKeyBtn.addEventListener('click', () => {
   if (recordingShortcut && recordingTarget === 'fullscreen') {
     stopShortcutRecording();
@@ -2384,6 +2405,7 @@ window.api.onShown(() => {
 
 window.api.onOpenSettings(() => openSettings());
 window.api.onFullscreen((value) => applyFullscreen(value));
+window.api.onPinned((value) => applyPinned(value));
 
 window.api.onSessionCreated(() => {
   if (state.busy) window.api.abort();
@@ -2404,6 +2426,7 @@ window.api.onSessionCreated(() => {
   syncContentWidth();
   applyZoom(state.cfg.zoom);
   applyFullscreen(state.cfg.fullscreen === true);
+  applyPinned(state.cfg.pinned === true);
   /* 图片走独立的内联通道，这里只保留文档扩展名 */
   const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
   FILES_OK = (Array.isArray(state.cfg.fileExts) ? state.cfg.fileExts : []).filter((e) => !imageExts.includes(e));

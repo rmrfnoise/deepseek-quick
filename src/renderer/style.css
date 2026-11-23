@@ -368,6 +368,16 @@ body.fullscreen .stream-inner {
   color: var(--text);
 }
 
+/* 置顶生效时图钉实心强调，一眼能看出窗口处于固定状态 */
+.icon-btn.on {
+  color: var(--accent);
+}
+
+.icon-btn.on:hover {
+  background: var(--accent-soft);
+  color: var(--accent-hover);
+}
+
 /* ---------- 提示条 ---------- */
 
 .notice {

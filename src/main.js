@@ -298,6 +298,8 @@ let quitting = false;
    这里自己保存窗口边界，用 setBounds 实现可进可出的全屏 */
 let fullscreen = false;
 let normalBounds = null;
+/* 置顶开关：开着时窗口不随失焦自动隐藏，始终浮在其他窗口之上 */
+let pinned = false;
 /* 系统对话框（选文件）期间不计失焦，否则窗口会自己藏起来 */
 let dialogOpen = 0;
 
@@ -307,6 +309,9 @@ function createWindow() {
   const { workArea } = screen.getPrimaryDisplay();
   const x = Math.round(workArea.x + (workArea.width - WIN_WIDTH) / 2);
   const y = Math.round(workArea.y + workArea.height * 0.18);
+
+  /* 置顶状态在窗口创建前就位，避免第一帧按默认值判断失焦 */
+  pinned = store.load().pinned === true;
 
   win = new BrowserWindow({
     width: WIN_WIDTH,
@@ -342,8 +347,8 @@ function createWindow() {
 
   win.on('blur', () => {
     if (quitting) return;
-    /* 全屏阅读时不要因为点到别的窗口就自动隐藏 */
-    if (fullscreen) return;
+    /* 全屏阅读、置顶时不要因为点到别的窗口就自动隐藏 */
+    if (fullscreen || pinned) return;
     if (win.webContents.isDevToolsOpened()) return;
     /* 打开系统文件对话框时窗口必然失焦，这时候不能把自己藏起来；
        对话框刚关掉的那一瞬间也可能补发一次 blur，稍等一下再看焦点在哪 */
@@ -351,7 +356,7 @@ function createWindow() {
     setTimeout(() => {
       if (quitting || dialogOpen > 0) return;
       if (!win || win.isDestroyed() || win.isFocused()) return;
-      if (fullscreen) return;
+      if (fullscreen || pinned) return;
       hideWindow();
     }, 40);
   });
@@ -427,6 +432,18 @@ function toggleWindow() {
   if (!win) return;
   if (win.isVisible()) hideWindow();
   else showWindow();
+}
+
+/** 置顶：写入配置，下次启动沿用。置顶期间点其他窗口不会自动隐藏，窗口始终浮在最前 */
+function setPinned(value) {
+  pinned = Boolean(value);
+  store.save({ pinned });
+  if (win && !win.isDestroyed()) {
+    if (pinned) win.setAlwaysOnTop(true, 'screen-saver');
+    /* 加载中先不发，渲染进程 boot 时会从 config:get 拿到一致状态 */
+    if (!win.webContents.isLoading()) win.webContents.send('ui:pinned', pinned);
+  }
+  return pinned;
 }
 
 /* ---------- 热键 ---------- */
@@ -541,6 +558,7 @@ function registerIpc() {
       fullscreenHotkey: cfg.fullscreenHotkey,
       newlineHotkey: cfg.newlineHotkey,
       startFullscreen: cfg.startFullscreen,
+      pinned,
       fullscreen,
       models: MODELS,
       efforts: EFFORTS,
@@ -936,6 +954,8 @@ function registerIpc() {
     const on = setFullscreen(value);
     return { ok: true, fullscreen: on };
   });
+
+  ipcMain.handle('window:set-pinned', (_e, value) => ({ ok: true, pinned: setPinned(value) }));
 
   ipcMain.handle('shell:open-external', (_e, url) => {
     const raw = String(url || '');
