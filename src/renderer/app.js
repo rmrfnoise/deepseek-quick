@@ -1137,9 +1137,12 @@ async function removeSession(id) {
   if (state.busy && state.currentSessionId === id) await window.api.abort();
   const res = await window.api.deleteSession(id);
   if (res.currentId === null && state.currentSessionId === id) {
+    /* 删掉的是当前会话：回到空白草稿，标题也要跟着清掉，
+       否则关掉会话列表后标题栏还挂着已删会话的名字 */
     state.currentSessionId = null;
     state.cur = null;
     clearDom();
+    setSessionTitle('');
   }
   await refreshSessions();
 }
